@@ -10,6 +10,7 @@ func ApplyCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var allowedOrigins = make(map[string]bool)
 		allowedOrigins["localhost:5173"] = true
+		allowedOrigins["vachanika.vercel.app"] = true
 
 		originUrl := r.Header.Get("origin")
 		if originUrl != "" {
