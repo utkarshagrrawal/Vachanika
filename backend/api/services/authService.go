@@ -17,6 +17,13 @@ func CreateUserService(u *models.NewUser) string {
 	if err != nil {
 		return "Error finding the user table in the Database"
 	}
+	result := database.DatabaseConnection.DB.QueryRow("SELECT NAME FROM USERS WHERE EMAIL = ?", u.Email)
+	var name string
+	if err = result.Scan(&name); err != nil && err != sql.ErrNoRows {
+		return "Error checking if user exists or not"
+	} else if name != "" {
+		return "User already exists with this mail address"
+	}
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return "Error create the hash for the password"
@@ -61,16 +68,24 @@ func LoginUserService(u *models.UserLogin) (string, error) {
 	return token, nil
 }
 
-func UserDetailsService(email string) (user models.UserDetails, err error) {
-	_, err = database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS USERS (NAME NVARCHAR(200), EMAIL NVARCHAR(250), PASSWORD NVARCHAR(70), GENDER NVARCHAR(10), PHONE NVARCHAR(15), ROLE NVARCHAR(10), DOB DATE)")
-	if err != nil {
-		return
-	}
-	result := database.DatabaseConnection.DB.QueryRow("SELECT NAME, EMAIL, GENDER, PHONE, ROLE, DOB FROM USERS WHERE EMAIL = ?", email)
-	if err = result.Scan(&user.Name, &user.Email, &user.Gender, &user.Phone, &user.Role, &user.DOB); err == sql.ErrNoRows {
-		return
+func ChangePasswordService(email string, p *models.PasswordModification) string {
+	result := database.DatabaseConnection.DB.QueryRow("SELECT PASSWORD FROM USERS WHERE EMAIL = ?", email)
+	var previousPasswordInDB string
+	if err := result.Scan(&previousPasswordInDB); err == sql.ErrNoRows {
+		return "User not found"
 	} else if err != nil {
-		return
+		return "Error retrieving the old password"
 	}
-	return
+	if err := bcrypt.CompareHashAndPassword([]byte(previousPasswordInDB), []byte(p.OldPassword)); err != nil {
+		return "Invalid old password"
+	}
+	hashedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(p.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return "Error encrypting the password"
+	}
+	_, err = database.DatabaseConnection.DB.Exec("UPDATE USERS SET PASSWORD = ? WHERE EMAIL = ?", string(hashedPasswordBytes), email)
+	if err != nil {
+		return "Error updating the password"
+	}
+	return "Password changed successfully"
 }

@@ -8,7 +8,7 @@ export default function Home() {
 
   useEffect(() => {
     axios
-      .get(import.meta.env.VITE_API_URL + "/api/v1/auth/user", {
+      .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
         withCredentials: true,
       })
       .then((res) => {
@@ -26,16 +26,15 @@ export default function Home() {
       <Header userDetails={userDetails} />
 
       <section className="text-center py-24 px-10">
-        <h1 className="text-6xl font-extrabold mb-4">Welcome to Vachanika</h1>
+        <h1 className="text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
+          Revolutionaize Your Library Experience
+        </h1>
         <p className="text-2xl mb-6">
           Browse, Wishlist, and Borrow Books Seamlessly
         </p>
       </section>
 
       <section id="discover" className="py-24 px-12">
-        <h2 className="text-4xl font-bold text-center text-gray-800 mb-12">
-          How Vachanika Works
-        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
           <div className="bg-indigo-50 rounded-lg overflow-hidden p-8 text-center duration-300">
             <div className="text-indigo-600 text-5xl mb-6">📚</div>
@@ -92,33 +91,49 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="py-24 px-12 bg-indigo-50">
+      <section id="features" className="p-12">
         <h2 className="text-4xl font-bold text-center text-gray-800 mb-16">
-          Our Library Features
+          What Our Users Say
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
-          {/* Feature 1: Easy Navigation */}
-          <div className="bg-white rounded-lg overflow-hidden p-8 text-center duration-300">
-            <div className="text-indigo-600 text-5xl mb-6">🔍</div>
-            <h3 className="font-semibold text-xl text-gray-800 mb-4">
-              Easy Navigation
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Quickly find books, manage your wishlist, and track your borrowed
-              items with a seamless interface.
-            </p>
+          <div className="bg-white rounded-lg border border-gray-200 p-8">
+            <span className="italic">
+              "Vachanika has revolutionized how we manage our library. It's
+              intuitive, powerful, and has saved us countless hours."
+            </span>
+            <div className="flex items-center mt-4">
+              <img
+                src="https://placehold.co/50x50"
+                alt="User"
+                className="h-12 w-12 rounded-full"
+              />
+              <div className="ml-4 flex flex-col">
+                <span className="font-semibold">Jane Doe</span>
+                <span className="text-gray-600">
+                  Head Librarian, City central library
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Feature 3: Track Borrow History */}
-          <div className="bg-white rounded-lg overflow-hidden p-8 text-center duration-300">
-            <div className="text-indigo-600 text-5xl mb-6">📜</div>
-            <h3 className="font-semibold text-xl text-gray-800 mb-4">
-              Track Borrow History
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Easily view your borrowing history, including the books you've
-              read and the ones you have borrowed currently.
-            </p>
+          <div className="bg-white rounded-lg border border-gray-200 p-8">
+            <span className="italic">
+              "The real-time updates and easy-to-use interface have made
+              managing our vast collection a breeze."
+            </span>
+            <div className="flex items-center mt-4">
+              <img
+                src="https://placehold.co/50x50"
+                alt="User"
+                className="h-12 w-12 rounded-full"
+              />
+              <div className="ml-4 flex flex-col">
+                <span className="font-semibold">Michael Chen</span>
+                <span className="text-gray-600">
+                  Librarian, University of Knowledge
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

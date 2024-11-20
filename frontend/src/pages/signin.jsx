@@ -16,23 +16,19 @@ export default function Signin() {
     setLoading(true);
 
     axios
-      .get(import.meta.env.VITE_API_URL + "/api/v1/auth/user", {
+      .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
         withCredentials: true,
       })
       .then((res) => {
         if (res.data?.name) {
-          if (params.get("redirect")) {
-            window.location.href = decodeURIComponent(params.get("redirect"));
+          if (params.get("next")) {
+            window.location.href = decodeURIComponent(params.get("next"));
           } else {
             window.location.href = "/";
           }
         }
       })
-      .catch((err) => {
-        setErrorMessage(
-          err.response?.data || "An error occurred. Please try again."
-        );
-      })
+      .catch((err) => {})
       .finally(() => {
         setLoading(false);
       });
@@ -60,18 +56,19 @@ export default function Signin() {
       })
       .then((res) => {
         if (res.data === "Login successfull") {
-          if (params.get("redirect")) {
-            window.location.href = decodeURIComponent(params.get("redirect"));
+          if (params.get("next")) {
+            window.location.href = decodeURIComponent(params.get("next"));
           } else {
             window.location.href = "/";
           }
         } else {
-          alert(res.data);
+          setErrorMessage(res.data || "An error occurred. Please try again.");
         }
       })
       .catch((err) => {
-        console.log(err);
-        alert(err.response?.data || "An error occurred. Please try again.");
+        setErrorMessage(
+          err.response?.data || "An error occurred. Please try again."
+        );
       })
       .finally(() => {
         setLoading(false);

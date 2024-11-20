@@ -1,8 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import Logo from "../assets/logo.jpg";
-import ShieldCheckIcon from "./components/icons/shieldCheckIcon";
-import ShieldWarningIcon from "./components/icons/shieldWarningIcon";
+import ShieldCheckIcon from "../components/icons/shieldCheckIcon";
+import ShieldWarningIcon from "../components/icons/shieldWarningIcon";
 
 export default function Signup() {
   const [signupData, setSignupData] = useState({

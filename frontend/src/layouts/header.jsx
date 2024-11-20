@@ -15,7 +15,7 @@ export default function Header({ userDetails }) {
       </div>
 
       {/* Navigation for Large Screens */}
-      <nav className="hidden lg:flex lg:items-center space-x-6 text-gray-700 text-lg font-medium">
+      <nav className="hidden lg:flex lg:items-center space-x-6 text-gray-700 text-md font-medium">
         <a
           href="#browse"
           className="hover:text-indigo-600 transition duration-300"
@@ -40,9 +40,9 @@ export default function Header({ userDetails }) {
         >
           For Librarians
         </a>
-        {userDetails ? (
+        {userDetails?.name ? (
           <a
-            href="/profile"
+            href="/user/profile"
             className="hover:text-indigo-600 transition duration-300"
           >
             Profile
@@ -83,7 +83,7 @@ export default function Header({ userDetails }) {
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
         <nav className="absolute top-16 left-0 w-full bg-white shadow-lg py-4 lg:hidden">
-          <ul className="flex flex-col space-y-4 text-gray-700 text-lg font-medium px-6">
+          <ul className="flex flex-col space-y-4 text-gray-700 text-md font-medium px-6">
             <li>
               <a
                 href="#browse"
@@ -117,9 +117,9 @@ export default function Header({ userDetails }) {
               </a>
             </li>
             <li>
-              {userDetails ? (
+              {userDetails?.name ? (
                 <a
-                  href="/profile"
+                  href="/user/profile"
                   className="block hover:text-indigo-600 transition duration-300"
                 >
                   Profile

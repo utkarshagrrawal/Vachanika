@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type NewUser struct {
 	Name     string    `json:"name"`
@@ -25,6 +29,16 @@ type UserLogin struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
 	RememberMe bool   `json:"rememberMe"`
+}
+
+type PasswordModification struct {
+	OldPassword string `json:"password"`
+	NewPassword string `json:"newPassword"`
+}
+
+type DeletionConfirmationEntry struct {
+	Identifier uuid.UUID
+	ExpireAt   int
 }
 
 type UserToken string

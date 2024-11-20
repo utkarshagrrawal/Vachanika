@@ -22,13 +22,13 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Password cannot be greater than 48 characters")
 		return
 	}
-	msg := services.CreateUserService(&user)
-	if msg != "User created successfully" {
+	userCreationResponse := services.CreateUserService(&user)
+	if userCreationResponse != "User created successfully" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(msg)
+		json.NewEncoder(w).Encode(userCreationResponse)
 		return
 	}
-	json.NewEncoder(w).Encode(msg)
+	json.NewEncoder(w).Encode(userCreationResponse)
 }
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -61,19 +61,30 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Login successfull")
 }
 
-func GetUserDetails(w http.ResponseWriter, r *http.Request) {
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	email, ok := r.Context().Value(models.UserToken("token")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode("Error getting the user session ID")
+		json.NewEncoder(w).Encode("Error retrieving the user session")
 		return
 	}
-	userDetails, err := services.UserDetailsService(email)
-	if err != nil {
+	var updatePasswordPayload models.PasswordModification
+	if err := json.NewDecoder(r.Body).Decode(&updatePasswordPayload); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode("Error getting the user details")
+		json.NewEncoder(w).Encode("Error reading the payload")
 		return
 	}
-	json.NewEncoder(w).Encode(userDetails)
+	if len(updatePasswordPayload.NewPassword) > 48 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Password cannot be greater than 48 characters")
+		return
+	}
+	changePasswordResponse := services.ChangePasswordService(email, &updatePasswordPayload)
+	if changePasswordResponse != "Password changed successfully" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(changePasswordResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(changePasswordResponse)
 }
