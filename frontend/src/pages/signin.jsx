@@ -151,7 +151,7 @@ export default function Signin() {
               }`}
               disabled={loading}
             >
-              {loading ? "Signing In..." : "Sign In"}
+              Sign In
             </button>
           </div>
         </form>

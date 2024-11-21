@@ -340,7 +340,7 @@ export default function Signup() {
               }`}
               disabled={loading}
             >
-              {loading ? "Signing Up..." : "Sign Up"}
+              Sign Up
             </button>
           </div>
         </form>
