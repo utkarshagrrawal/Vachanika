@@ -17,7 +17,7 @@ export default function Header({ userDetails }) {
       {/* Navigation for Large Screens */}
       <nav className="hidden lg:flex lg:items-center space-x-6 text-gray-700 text-md font-medium">
         <a
-          href="#browse"
+          href="/browse"
           className="hover:text-indigo-600 transition duration-300"
         >
           Browse Books
@@ -35,7 +35,7 @@ export default function Header({ userDetails }) {
           Borrow History
         </a>
         <a
-          href="#librarian"
+          href="/manage-books"
           className="hover:text-indigo-600 transition duration-300"
         >
           For Librarians

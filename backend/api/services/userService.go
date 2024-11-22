@@ -10,7 +10,7 @@ import (
 )
 
 func UserDetailsService(email string) (user models.UserDetails, err error) {
-	_, err = database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS USERS (NAME NVARCHAR(200), EMAIL NVARCHAR(250), PASSWORD NVARCHAR(70), GENDER NVARCHAR(10), PHONE NVARCHAR(15), ROLE NVARCHAR(10), DOB DATE)")
+	_, err = database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS USERS (NAME NVARCHAR(200), EMAIL NVARCHAR(250) PRIMARY KEY, PASSWORD NVARCHAR(70), GENDER NVARCHAR(10), PHONE NVARCHAR(15), ROLE NVARCHAR(10), DOB DATE)")
 	if err != nil {
 		return
 	}
@@ -46,7 +46,7 @@ func DeleteUserService(email string) (string, error) {
 	if err != nil {
 		return "Error starting the deletion process", err
 	}
-	_, err = transaction.Exec("CREATE TABLE IF NOT EXISTS DELETION_CONFIRM (UUID NVARCHAR(50), EXPIRE_AT INT)")
+	_, err = transaction.Exec("CREATE TABLE IF NOT EXISTS DELETION_CONFIRM (UUID NVARCHAR(50) PRIMARY KEY, EXPIRE_AT INT)")
 	if err != nil {
 		return "Error while generating deletion request", err
 	}

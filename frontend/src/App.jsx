@@ -5,6 +5,9 @@ import Signup from "./pages/signup";
 import TermsAndConditions from "./pages/tc";
 import UserProfile from "./pages/userProfile";
 import Goodbye from "./pages/goodbye";
+import NotFound from "./pages/notFound";
+import BrowseBooks from "./pages/browse";
+import ManageBooks from "./pages/manageBooks";
 
 function App() {
   return (
@@ -19,7 +22,10 @@ function App() {
         <Route path="/signin" element={<Signin />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/goodbye/:deletionToken" element={<Goodbye />} />
+        <Route path="/browse" element={<BrowseBooks />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        <Route path="/manage-books" element={<ManageBooks />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
