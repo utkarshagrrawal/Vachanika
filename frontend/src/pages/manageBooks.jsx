@@ -2,6 +2,39 @@ import { useState } from "react";
 
 export default function ManageBooks() {
   const [section, setSection] = useState("search");
+  const [addBookResponse, setAddBookResponse] = useState("");
+  const [newBook, setNewBook] = useState({
+    isbn: "",
+    quantity: 0,
+  });
+
+  const handleNewBookDetails = (e) => {
+    setNewBook({
+      ...newBook,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleAddBook = (e) => {
+    e.preventDefault();
+
+    if (!newBook.isbn || !newBook.quantity) {
+      setAddBookResponse("Please fill in all fields");
+      return;
+    }
+    if (newBook.quantity <= 0) {
+      setAddBookResponse("Quantity cannot be negative or zero");
+      return;
+    }
+    if (newBook.isbn.length !== 13) {
+      setAddBookResponse("Invalid ISBN");
+      return;
+    }
+    if (newBook.quantity > 10) {
+      setAddBookResponse("Quantity cannot be greater than 10");
+      return;
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -90,41 +123,43 @@ export default function ManageBooks() {
             </div>
           )}
           {section === "add-book" && (
-            <div className="mt-4 flex flex-col gap-2">
-              <label className="text-sm font-semibold">Book Title</label>
-              <input
-                type="text"
-                placeholder="Book Title"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
-              />
-              <label className="text-sm font-semibold">Author</label>
-              <input
-                type="text"
-                placeholder="Author"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
-              />
-              <label className="text-sm font-semibold">Genre</label>
-              <input
-                type="text"
-                placeholder="Genre"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
-              />
+            <form onSubmit={handleAddBook} className="mt-4 flex flex-col gap-2">
+              <div
+                className={`border p-2 rounded-lg text-sm text-center font-semibold ${
+                  addBookResponse === ""
+                    ? "hidden"
+                    : addBookResponse === "Book added successfully"
+                    ? "bg-green-50 text-green-500 border-green-500"
+                    : "bg-red-50 text-red-500 border-red-500"
+                }`}
+              >
+                {addBookResponse}
+              </div>
               <label className="text-sm font-semibold">ISBN</label>
               <input
-                type="number"
+                type="text"
+                id="isbn"
+                value={newBook.isbn}
+                onChange={handleNewBookDetails}
                 placeholder="ISBN"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                required
               />
               <label className="text-sm font-semibold">Quantity</label>
               <input
                 type="number"
+                min={0}
+                id="quantity"
+                value={newBook.quantity}
+                onChange={handleNewBookDetails}
                 placeholder="Quantity"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                required
               />
               <button className="bg-gray-900 text-white text-sm font-semibold text-center py-2 px-4 rounded-lg border">
                 Add Book
               </button>
-            </div>
+            </form>
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
