@@ -17,6 +17,7 @@ func main() {
 
 	mainRouter.PathPrefix("/api/v1/auth").Handler(http.StripPrefix("/api/v1/auth", routers.AuthRouter()))
 	mainRouter.PathPrefix("/api/v1/user").Handler(http.StripPrefix("/api/v1/user", routers.UserRouter()))
+	mainRouter.PathPrefix("/api/v1/library").Handler(http.StripPrefix("/api/v1/library", routers.LibraryRouter()))
 
 	port := ":" + os.Getenv("PORT")
 

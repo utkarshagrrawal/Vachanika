@@ -1,7 +1,64 @@
 import { useState } from "react";
+import axios from "axios";
 
 export default function ManageBooks() {
   const [section, setSection] = useState("search");
+  const [addBookResponse, setAddBookResponse] = useState("");
+  const [newBook, setNewBook] = useState({
+    isbn: "",
+    quantity: 0,
+  });
+  const [addingBook, setAddingBook] = useState(false);
+
+  const handleNewBookDetails = (e) => {
+    setNewBook({
+      ...newBook,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleAddBook = (e) => {
+    e.preventDefault();
+
+    setAddBookResponse("");
+    setAddingBook(true);
+
+    if (
+      !newBook.isbn ||
+      newBook.isbn.length !== 13 ||
+      !newBook.isbn.match(/^[0-9]+$/)
+    ) {
+      setAddBookResponse("Invalid ISBN");
+      setAddingBook(false);
+      return;
+    }
+    if (newBook.quantity > 10 || newBook.quantity < 1) {
+      setAddBookResponse("Quantity should be between 1 and 10");
+      setAddingBook(false);
+      return;
+    }
+
+    axios
+      .post(
+        import.meta.env.VITE_API_URL + "/api/v1/library/add-book",
+        {
+          isbn: newBook.isbn,
+          quantity: parseInt(newBook.quantity),
+        },
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        res.status === 200 && setAddBookResponse(res.data);
+      })
+      .catch((err) => {
+        setAddBookResponse(err.response?.data || "An error occurred");
+      })
+      .finally(() => {
+        setAddingBook(false);
+      });
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -90,41 +147,49 @@ export default function ManageBooks() {
             </div>
           )}
           {section === "add-book" && (
-            <div className="mt-4 flex flex-col gap-2">
-              <label className="text-sm font-semibold">Book Title</label>
-              <input
-                type="text"
-                placeholder="Book Title"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
-              />
-              <label className="text-sm font-semibold">Author</label>
-              <input
-                type="text"
-                placeholder="Author"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
-              />
-              <label className="text-sm font-semibold">Genre</label>
-              <input
-                type="text"
-                placeholder="Genre"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
-              />
+            <form onSubmit={handleAddBook} className="mt-4 flex flex-col gap-2">
+              <div
+                className={`border p-2 rounded-lg text-sm text-center font-semibold ${
+                  addBookResponse === ""
+                    ? "hidden"
+                    : addBookResponse === "Book added successfully" ||
+                      addBookResponse === "Book quantity updated successfully"
+                    ? "bg-green-50 text-green-500 border-green-500"
+                    : "bg-red-50 text-red-500 border-red-500"
+                }`}
+              >
+                {addBookResponse}
+              </div>
               <label className="text-sm font-semibold">ISBN</label>
               <input
-                type="number"
+                type="text"
+                id="isbn"
+                value={newBook.isbn}
+                onChange={handleNewBookDetails}
                 placeholder="ISBN"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                required
               />
               <label className="text-sm font-semibold">Quantity</label>
               <input
                 type="number"
+                min={0}
+                id="quantity"
+                value={newBook.quantity}
+                onChange={handleNewBookDetails}
                 placeholder="Quantity"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                required
               />
-              <button className="bg-gray-900 text-white text-sm font-semibold text-center py-2 px-4 rounded-lg border">
-                Add Book
+              <button
+                className={`bg-gray-900 text-white text-sm font-semibold text-center py-2 px-4 rounded-lg border ${
+                  addingBook && "opacity-50 cursor-not-allowed"
+                }`}
+                disabled={addingBook}
+              >
+                {addingBook ? "Adding..." : "Add Book"}
               </button>
-            </div>
+            </form>
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
