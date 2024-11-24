@@ -46,7 +46,7 @@ func DeleteUserService(email string) (string, error) {
 	if err != nil {
 		return "Error starting the deletion process", err
 	}
-	_, err = transaction.Exec("CREATE TABLE IF NOT EXISTS DELETION_CONFIRM (UUID NVARCHAR(50) PRIMARY KEY, EXPIRE_AT INT)")
+	_, err = database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS DELETION_CONFIRM (UUID NVARCHAR(50) PRIMARY KEY, EXPIRE_AT INT)")
 	if err != nil {
 		return "Error while generating deletion request", err
 	}

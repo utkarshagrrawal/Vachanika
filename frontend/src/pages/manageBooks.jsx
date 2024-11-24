@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 
 export default function ManageBooks() {
   const [section, setSection] = useState("search");
@@ -7,6 +8,7 @@ export default function ManageBooks() {
     isbn: "",
     quantity: 0,
   });
+  const [addingBook, setAddingBook] = useState(false);
 
   const handleNewBookDetails = (e) => {
     setNewBook({
@@ -18,22 +20,44 @@ export default function ManageBooks() {
   const handleAddBook = (e) => {
     e.preventDefault();
 
-    if (!newBook.isbn || !newBook.quantity) {
-      setAddBookResponse("Please fill in all fields");
-      return;
-    }
-    if (newBook.quantity <= 0) {
-      setAddBookResponse("Quantity cannot be negative or zero");
-      return;
-    }
-    if (newBook.isbn.length !== 13) {
+    setAddBookResponse("");
+    setAddingBook(true);
+
+    if (
+      !newBook.isbn ||
+      newBook.isbn.length !== 13 ||
+      !newBook.isbn.match(/^[0-9]+$/)
+    ) {
       setAddBookResponse("Invalid ISBN");
+      setAddingBook(false);
       return;
     }
-    if (newBook.quantity > 10) {
-      setAddBookResponse("Quantity cannot be greater than 10");
+    if (newBook.quantity > 10 || newBook.quantity < 1) {
+      setAddBookResponse("Quantity should be between 1 and 10");
+      setAddingBook(false);
       return;
     }
+
+    axios
+      .post(
+        import.meta.env.VITE_API_URL + "/api/v1/library/add-book",
+        {
+          isbn: newBook.isbn,
+          quantity: parseInt(newBook.quantity),
+        },
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        res.status === 200 && setAddBookResponse(res.data);
+      })
+      .catch((err) => {
+        setAddBookResponse(err.response?.data || "An error occurred");
+      })
+      .finally(() => {
+        setAddingBook(false);
+      });
   };
 
   return (
@@ -128,7 +152,8 @@ export default function ManageBooks() {
                 className={`border p-2 rounded-lg text-sm text-center font-semibold ${
                   addBookResponse === ""
                     ? "hidden"
-                    : addBookResponse === "Book added successfully"
+                    : addBookResponse === "Book added successfully" ||
+                      addBookResponse === "Book quantity updated successfully"
                     ? "bg-green-50 text-green-500 border-green-500"
                     : "bg-red-50 text-red-500 border-red-500"
                 }`}
@@ -156,8 +181,13 @@ export default function ManageBooks() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
                 required
               />
-              <button className="bg-gray-900 text-white text-sm font-semibold text-center py-2 px-4 rounded-lg border">
-                Add Book
+              <button
+                className={`bg-gray-900 text-white text-sm font-semibold text-center py-2 px-4 rounded-lg border ${
+                  addingBook && "opacity-50 cursor-not-allowed"
+                }`}
+                disabled={addingBook}
+              >
+                {addingBook ? "Adding..." : "Add Book"}
               </button>
             </form>
           )}
