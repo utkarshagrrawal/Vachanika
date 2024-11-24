@@ -110,7 +110,7 @@ export default function Header({ userDetails }) {
             </li>
             <li>
               <a
-                href="#librarian"
+                href="/manage-books"
                 className="block hover:text-indigo-600 transition duration-300"
               >
                 For Librarians
