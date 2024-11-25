@@ -1,5 +1,7 @@
-import { useState } from "react";
-import SearchIcon from "../components/icons/searchIcon";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import BookIcon from "../components/icons/bookIcon";
+import StarIcon from "../components/icons/starIcon";
 
 export default function BrowseBooks() {
   const [filters, setFilters] = useState({
@@ -7,6 +9,38 @@ export default function BrowseBooks() {
     genre: "",
     minRating: 0,
   });
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [books, setBooks] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
+        withCredentials: true,
+      })
+      .then((res) => {})
+      .catch((err) => {
+        window.location.href = "/signin?next=" + encodeURIComponent("/browse");
+      });
+  }, []);
+
+  useEffect(() => {
+    axios
+      .get(
+        import.meta.env.VITE_API_URL + "/api/v1/library/get-books?page=" + page,
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        res.status === 200 && setBooks(res.data);
+      })
+      .catch((err) => {
+        setError(
+          err.response?.data || "An error occurred while fetching books"
+        );
+      });
+  }, [page]);
 
   const handleFiltersChange = (e) => {
     setFilters({
@@ -24,11 +58,21 @@ export default function BrowseBooks() {
         <p className="text-lg text-center text-gray-600">
           Discover your next favorite book
         </p>
-        <div className="bg-white rounded-lg flex flex-wrap md:flex-nowrap justify-center md:justify-between items-center gap-4 border w-full p-6 shadow-md">
+
+        <div
+          className={`w-full border rounded-lg p-2 text-sm font-semibold text-center ${
+            !error ? "hidden" : "bg-red-100 border-red-300 text-red-700"
+          }`}
+        >
+          {error}
+        </div>
+
+        <div className="flex flex-wrap md:flex-nowrap justify-center md:justify-between items-center gap-4 w-full">
           <div className="flex-grow">
             <input
               type="text"
               id="search"
+              autoFocus
               value={filters.search}
               onChange={handleFiltersChange}
               placeholder="Search for a book..."
@@ -53,7 +97,7 @@ export default function BrowseBooks() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 min-w-72">
+          <div className="flex justify-between items-center gap-2 min-w-72">
             <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
               Min Rating:
             </label>
@@ -71,6 +115,35 @@ export default function BrowseBooks() {
               {filters.minRating}
             </span>
           </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {books.length > 0 ? (
+            books.map((book, index) => (
+              <div className="bg-white rounded-lg shadow-md p-4" key={index}>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {book.title}
+                </h2>
+                <h5 className="mt-4 text-sm font-medium text-gray-600">
+                  {book.author}
+                </h5>
+                <div className="flex items-center mt-2">
+                  <StarIcon className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-semibold text-gray-800 ml-1">
+                    {book.rating || "0"}
+                  </span>
+                </div>
+                <button className="flex justify-center items-center w-full mt-4 rounded-lg border border-gray-200 text-sm font-semibold px-4 py-2 hover:bg-black hover:text-white transition-colors duration-400">
+                  <BookIcon className="h-4 w-4 mr-2" />
+                  View Details
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="w-full text-center text-gray-600">
+              No books found
+            </div>
+          )}
         </div>
       </div>
     </div>

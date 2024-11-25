@@ -1,8 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 export default function ManageBooks() {
-  const [section, setSection] = useState("search");
+  const { section } = useParams();
+  const [user, setUser] = useState({});
+  const [currentSection, setCurrentSection] = useState(section || "search");
+  const [searchResponse, setSearchResponse] = useState("");
+  const [searchPage, setSearchPage] = useState(1);
+  const [statistics, setStatistics] = useState({
+    totalBooks: 0,
+    booksAddedThisMonth: 0,
+    checkedOut: 0,
+    overdue: 0,
+  });
+  const [foundBooks, setFoundBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [addBookResponse, setAddBookResponse] = useState("");
   const [newBook, setNewBook] = useState({
     isbn: "",
@@ -10,11 +24,97 @@ export default function ManageBooks() {
   });
   const [addingBook, setAddingBook] = useState(false);
 
+  useEffect(() => {
+    axios
+      .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
+        withCredentials: true,
+      })
+      .then((res) => {
+        if (res.data.role !== "librarian") {
+          window.location.href = "/";
+        }
+        setUser(res.data);
+      })
+      .catch((err) => {
+        window.location.href =
+          "/signin?next=" + encodeURIComponent("/manage-books");
+      });
+  }, []);
+
+  useEffect(() => {
+    const fetchBooks = () => {
+      axios
+        .get(
+          import.meta.env.VITE_API_URL +
+            "/api/v1/library/get-books?page=" +
+            searchPage,
+          {
+            withCredentials: true,
+          }
+        )
+        .then((res) => {
+          if (res.status === 200) {
+            setFoundBooks(res.data);
+            setFilteredBooks(res.data);
+          }
+        })
+        .catch((err) => {
+          setSearchResponse(err.response?.data || "An error occurred");
+        });
+    };
+    const fetchStatistics = () => {
+      axios
+        .get(
+          import.meta.env.VITE_API_URL + "/api/v1/library/get-library-summary",
+          {
+            withCredentials: true,
+          }
+        )
+        .then((res) => {
+          if (res.status === 200) {
+            setStatistics({
+              totalBooks: res.data.totalBooks,
+              booksAddedThisMonth: res.data.booksAddedThisMonth,
+              checkedOut: res.data.totalCheckedOut,
+              checkedOutThisMonth: res.data.booksCheckedOutThisMonth,
+              overdue: res.data.totalOverdue,
+              overdueThisMonth: res.data.booksOverdueThisMonth,
+            });
+          }
+        })
+        .catch((err) => {
+          setSearchResponse(err.response?.data || "An error occurred");
+        });
+    };
+    fetchStatistics();
+    if (currentSection === "search") {
+      setSearchResponse("");
+      fetchBooks();
+    }
+  }, [currentSection, searchPage]);
+
   const handleNewBookDetails = (e) => {
     setNewBook({
       ...newBook,
       [e.target.id]: e.target.value,
     });
+  };
+
+  const handleSearch = (e) => {
+    setSearchText(e.target.value);
+    const filteredArray = foundBooks.filter((book) => {
+      if (book.title.toLowerCase().includes(e.target.value.toLowerCase())) {
+        return book;
+      } else if (book.isbn.includes(e.target.value)) {
+        return book;
+      } else if (
+        book.author.toLowerCase().includes(e.target.value.toLowerCase())
+      ) {
+        return book;
+      }
+    });
+    if (e.target.value.length > 0) setFilteredBooks(filteredArray);
+    else if (e.target.value.length === 0) setFilteredBooks(foundBooks);
   };
 
   const handleAddBook = (e) => {
@@ -76,8 +176,10 @@ export default function ManageBooks() {
               <span className="text-gray-500 text-sm">#</span>
             </div>
             <div className="mt-4 flex flex-col justify-center">
-              <span className="text-lg font-bold">2232</span>
-              <span className="text-gray-600 text-xs">+20 this month</span>
+              <span className="text-lg font-bold">{statistics.totalBooks}</span>
+              <span className="text-gray-600 text-xs">
+                +{statistics.booksAddedThisMonth} this month
+              </span>
             </div>
           </div>
           <div className="bg-white border border-gray-300 p-6 rounded-lg">
@@ -86,8 +188,10 @@ export default function ManageBooks() {
               <span className="text-gray-500 text-sm">#</span>
             </div>
             <div className="mt-4 flex flex-col justify-center">
-              <span className="text-lg font-bold">23</span>
-              <span className="text-gray-600 text-xs">+20 from yesterday</span>
+              <span className="text-lg font-bold">{statistics.checkedOut}</span>
+              <span className="text-gray-600 text-xs">
+                +{statistics.checkedOutThisMonth} this month
+              </span>
             </div>
           </div>
           <div className="bg-white border border-gray-300 p-6 rounded-lg">
@@ -96,8 +200,10 @@ export default function ManageBooks() {
               <span className="text-gray-500 text-sm">/</span>
             </div>
             <div className="mt-4 flex flex-col justify-center">
-              <span className="text-lg font-bold">18</span>
-              <span className="text-gray-600 text-xs">-6 from last week</span>
+              <span className="text-lg font-bold">{statistics.overdue}</span>
+              <span className="text-gray-600 text-xs">
+                +{statistics.overdueThisMonth} this month
+              </span>
             </div>
           </div>
         </div>
@@ -111,42 +217,81 @@ export default function ManageBooks() {
           <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1 rounded-lg mt-4">
             <div
               className={`p-1 text-center text-sm font-semibold hover:cursor-pointer ${
-                section === "search" && "bg-white"
+                currentSection === "search" && "bg-white"
               }`}
-              onClick={() => setSection("search")}
+              onClick={() => setCurrentSection("search")}
             >
               Search Books
             </div>
             <div
               className={`p-1 text-center text-sm font-semibold hover:cursor-pointer ${
-                section === "add-book" && "bg-white"
+                currentSection === "add-book" && "bg-white"
               }`}
-              onClick={() => setSection("add-book")}
+              onClick={() => setCurrentSection("add-book")}
             >
               Add Book
             </div>
             <div
               className={`p-1 text-center text-sm font-semibold  hover:cursor-pointer ${
-                section === "process-return" && "bg-white"
+                currentSection === "process-return" && "bg-white"
               }`}
-              onClick={() => setSection("process-return")}
+              onClick={() => setCurrentSection("process-return")}
             >
               Process Returns
             </div>
           </div>
-          {section === "search" && (
-            <div className="mt-4 flex gap-2 items-center">
+          {currentSection === "search" && (
+            <div className="mt-4 flex flex-col">
+              <div
+                className={`border p-2 rounded-lg text-sm text-center font-semibold ${
+                  searchResponse === ""
+                    ? "hidden"
+                    : "bg-red-50 text-red-500 border-red-500"
+                }`}
+              >
+                {searchResponse}
+              </div>
               <input
                 type="text"
+                value={searchText}
+                onChange={handleSearch}
                 placeholder="Search for a book..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
               />
-              <button className="text-sm font-semibold text-center py-2 px-4 rounded-lg border ml-2">
-                Search
-              </button>
+              <div className="mt-4 flex flex-col space-y-4">
+                {filteredBooks.length > 0 ? (
+                  filteredBooks.map((book) => (
+                    <div
+                      key={book.isbn}
+                      className="flex gap-4 items-center justify-between bg-white shadow-md py-2 px-4 border rounded-lg hover:shadow-lg transition-shadow duration-200"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <span className="text-lg font-bold text-gray-800">
+                          {book.title}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ISBN: {book.isbn}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-md font-medium text-indigo-600">
+                          {book.quantity} available
+                        </span>
+                        <span className="text-xs text-gray-500 italic">
+                          {book.quantity > 0 ? "In stock" : "Out of stock"}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-800 text-center">
+                    No books found
+                  </div>
+                )}
+              </div>
             </div>
           )}
-          {section === "add-book" && (
+          {currentSection === "add-book" && (
             <form onSubmit={handleAddBook} className="mt-4 flex flex-col gap-2">
               <div
                 className={`border p-2 rounded-lg text-sm text-center font-semibold ${
@@ -212,7 +357,12 @@ export default function ManageBooks() {
               Quick Actions
             </h1>
             <div className="flex flex-col gap-2 mt-4">
-              <span className="text-sm text-gray-800">Add a book</span>
+              <span
+                className="text-sm text-gray-800 hover:underline"
+                onClick={() => setCurrentSection("add-book")}
+              >
+                Add a book
+              </span>
               <span className="text-sm text-gray-800">Search for a book</span>
             </div>
           </div>

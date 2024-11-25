@@ -24,7 +24,11 @@ function App() {
         <Route path="/goodbye/:deletionToken" element={<Goodbye />} />
         <Route path="/browse" element={<BrowseBooks />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-        <Route path="/manage-books" element={<ManageBooks />} />
+        <Route
+          path="/manage-books"
+          element={<Navigate to="/manage-books/search" />}
+        />
+        <Route path="/manage-books/:section" element={<ManageBooks />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
