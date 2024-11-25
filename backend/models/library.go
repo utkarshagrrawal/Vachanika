@@ -5,6 +5,15 @@ type AddBookRequest struct {
 	Quantity int    `json:"quantity"`
 }
 
+type LibrarySummary struct {
+	TotalBooks               int `json:"totalBooks"`
+	BooksAddedThisMonth      int `json:"booksAddedThisMonth"`
+	TotalCheckedOut          int `json:"totalCheckedOut"`
+	BooksCheckedOutThisMonth int `json:"booksCheckedOutThisMonth"`
+	TotalOverdue             int `json:"totalOverdue"`
+	BooksOverdueThisMonth    int `json:"booksOverdueThisMonth"`
+}
+
 type Books struct {
 	ISBN      string `json:"isbn"`
 	Title     string `json:"title"`

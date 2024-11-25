@@ -34,12 +34,14 @@ export default function Header({ userDetails }) {
         >
           Borrow History
         </a>
-        <a
-          href="/manage-books"
-          className="hover:text-indigo-600 transition duration-300"
-        >
-          For Librarians
-        </a>
+        {userDetails?.role === "librarian" && (
+          <a
+            href="/manage-books"
+            className="hover:text-indigo-600 transition duration-300"
+          >
+            For Librarians
+          </a>
+        )}
         {userDetails?.name ? (
           <a
             href="/user/profile"
@@ -86,7 +88,7 @@ export default function Header({ userDetails }) {
           <ul className="flex flex-col space-y-4 text-gray-700 text-md font-medium px-6">
             <li>
               <a
-                href="#browse"
+                href="/browse"
                 className="block hover:text-indigo-600 transition duration-300"
               >
                 Browse Books
@@ -108,14 +110,16 @@ export default function Header({ userDetails }) {
                 Borrow History
               </a>
             </li>
-            <li>
-              <a
-                href="/manage-books"
-                className="block hover:text-indigo-600 transition duration-300"
-              >
-                For Librarians
-              </a>
-            </li>
+            {userDetails?.role === "librarian" && (
+              <li>
+                <a
+                  href="/manage-books"
+                  className="block hover:text-indigo-600 transition duration-300"
+                >
+                  For Librarians
+                </a>
+              </li>
+            )}
             <li>
               {userDetails?.name ? (
                 <a
