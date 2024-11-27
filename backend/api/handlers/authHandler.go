@@ -88,3 +88,19 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(changePasswordResponse)
 }
+
+func LogoutUser(w http.ResponseWriter, r *http.Request) {
+	cookie := http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/api/v1",
+		MaxAge:   0,
+		HttpOnly: true,
+	}
+	if os.Getenv("ENV") == "prod" {
+		cookie.Secure = true
+		cookie.SameSite = http.SameSiteNoneMode
+	}
+	http.SetCookie(w, &cookie)
+	json.NewEncoder(w).Encode("Logout successfull")
+}

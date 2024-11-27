@@ -42,3 +42,14 @@ type DeletionConfirmationEntry struct {
 }
 
 type UserToken string
+
+type BorrowedBook struct {
+	ISBN         string    `json:"isbn"`
+	Title        string    `json:"title"`
+	Author       string    `json:"author"`
+	Publisher    string    `json:"publisher"`
+	CheckoutDate time.Time `json:"checkoutDate"`
+	ReturnDate   time.Time `json:"returnDate"`
+	Returned     bool      `json:"returned"`
+	Overdue      bool      `json:"overdue"`
+}

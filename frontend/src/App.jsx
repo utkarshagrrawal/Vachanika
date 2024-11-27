@@ -8,6 +8,8 @@ import Goodbye from "./pages/goodbye";
 import NotFound from "./pages/notFound";
 import BrowseBooks from "./pages/browse";
 import ManageBooks from "./pages/manageBooks";
+import Book from "./pages/book";
+import Signout from "./pages/signout";
 
 function App() {
   return (
@@ -21,6 +23,7 @@ function App() {
         <Route path="/user/profile/:area" element={<UserProfile />} />
         <Route path="/signin" element={<Signin />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/signout" element={<Signout />} />
         <Route path="/goodbye/:deletionToken" element={<Goodbye />} />
         <Route path="/browse" element={<BrowseBooks />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
@@ -28,6 +31,7 @@ function App() {
           path="/manage-books"
           element={<Navigate to="/manage-books/search" />}
         />
+        <Route path="/book/:isbn" element={<Book />} />
         <Route path="/manage-books/:section" element={<ManageBooks />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

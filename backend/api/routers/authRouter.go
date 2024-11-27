@@ -13,6 +13,7 @@ func AuthRouter() *mux.Router {
 
 	router.HandleFunc("/signup", handlers.CreateUser).Methods("POST", "OPTIONS")
 	router.HandleFunc("/signin", handlers.LoginUser).Methods("POST", "OPTIONS")
+	router.HandleFunc("/signout", handlers.LogoutUser).Methods("POST", "OPTIONS")
 	router.Handle("/change-password", middlewares.VerifyToken(http.HandlerFunc(handlers.ChangePassword))).Methods("PUT", "OPTIONS")
 
 	return router

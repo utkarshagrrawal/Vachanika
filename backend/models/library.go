@@ -34,3 +34,7 @@ type OpenLibraryResponseDocs struct {
 	Subject    []string `json:"subject"`
 	Publisher  []string `json:"publisher"`
 }
+
+type BorrowBookRequest struct {
+	ISBN string `json:"isbn"`
+}
