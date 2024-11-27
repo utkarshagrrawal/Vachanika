@@ -27,7 +27,7 @@ export default function BrowseBooks() {
   useEffect(() => {
     axios
       .get(
-        import.meta.env.VITE_API_URL + "/api/v1/library/get-books?page=" + page,
+        import.meta.env.VITE_API_URL + "/api/v1/library/books?page=" + page,
         {
           withCredentials: true,
         }
@@ -133,7 +133,10 @@ export default function BrowseBooks() {
                     {book.rating || "0"}
                   </span>
                 </div>
-                <button className="flex justify-center items-center w-full mt-4 rounded-lg border border-gray-200 text-sm font-semibold px-4 py-2 hover:bg-black hover:text-white transition-colors duration-400">
+                <button
+                  className="flex justify-center items-center w-full mt-4 rounded-lg border border-gray-200 text-sm font-semibold px-4 py-2 hover:bg-black hover:text-white transition-colors duration-400"
+                  onClick={() => (window.location.href = "/book/" + book.isbn)}
+                >
                   <BookIcon className="h-4 w-4 mr-2" />
                   View Details
                 </button>

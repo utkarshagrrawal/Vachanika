@@ -50,9 +50,9 @@ func UpdateUserDetails(w http.ResponseWriter, r *http.Request) {
 	if email != updatedDetails.Email {
 		cookie := http.Cookie{
 			Name:     "token",
-			Value:    "invalid",
+			Value:    "",
 			Path:     "/api/v1",
-			MaxAge:   -1,
+			MaxAge:   0,
 			HttpOnly: true,
 		}
 		if os.Getenv("ENV") == "prod" {
@@ -93,4 +93,21 @@ func VerifyDeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(deleteAccountVerificationResult)
+}
+
+func GetCheckedOutBooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Error getting the user session")
+		return
+	}
+	checkedOutBooks, err := services.GetCheckedOutBooksService(email)
+	if err != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+	json.NewEncoder(w).Encode(checkedOutBooks)
 }

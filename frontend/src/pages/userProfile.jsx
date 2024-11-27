@@ -12,6 +12,10 @@ import BookmarkIcon from "../components/icons/bookmarkIcon";
 import ProfileAvatar from "../assets/avatar.jpg";
 
 export default function UserProfile() {
+  const dateFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+  });
+
   const { area } = useParams();
   const [section, setSection] = useState(area || "personal");
   const [passwordUpdateMessage, setPasswordUpdateMessage] = useState("");
@@ -52,6 +56,27 @@ export default function UserProfile() {
     };
     if (section === "personal") {
       fetchUserDetails();
+    }
+  }, [section]);
+
+  useEffect(() => {
+    const fetchBorrowedBooks = () => {
+      axios
+        .get(import.meta.env.VITE_API_URL + "/api/v1/user/borrowed-books", {
+          withCredentials: true,
+        })
+        .then((res) => {
+          setBorrowed(res.data);
+        })
+        .catch((err) => {
+          console.error(
+            err.response?.data ||
+              "An error occurred while fetching borrowed books."
+          );
+        });
+    };
+    if (section === "borrowed-books") {
+      fetchBorrowedBooks();
     }
   }, [section]);
 
@@ -534,10 +559,16 @@ export default function UserProfile() {
                 >
                   <div className="flex items-center gap-2">
                     <BookIcon className="h-6 w-6" />
-                    <span>{book.name}</span>
+                    <span>{book.title}</span>
                   </div>
-                  <button className="border bg-white hover:bg-gray-100 duration-200 py-2 px-4 rounded-md">
-                    Return
+                  <span className="text-gray-500 text-sm">
+                    Due by{" "}
+                    {dateFormatter.format(new Date(book.returnDate || ""))}
+                  </span>
+                  <button className="border bg-white hover:bg-gray-100 duration-200 py-1 px-4 rounded-md">
+                    {new Date(book.returnDate) > new Date()
+                      ? "Extend Due Date"
+                      : "Return"}
                   </button>
                 </div>
               ))

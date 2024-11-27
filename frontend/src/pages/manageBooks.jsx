@@ -46,7 +46,7 @@ export default function ManageBooks() {
       axios
         .get(
           import.meta.env.VITE_API_URL +
-            "/api/v1/library/get-books?page=" +
+            "/api/v1/library/books?page=" +
             searchPage,
           {
             withCredentials: true,
@@ -64,12 +64,9 @@ export default function ManageBooks() {
     };
     const fetchStatistics = () => {
       axios
-        .get(
-          import.meta.env.VITE_API_URL + "/api/v1/library/get-library-summary",
-          {
-            withCredentials: true,
-          }
-        )
+        .get(import.meta.env.VITE_API_URL + "/api/v1/library/library-summary", {
+          withCredentials: true,
+        })
         .then((res) => {
           if (res.status === 200) {
             setStatistics({

@@ -79,3 +79,23 @@ func VerifyDeleteAccountService(token string) string {
 	}
 	return "Token is valid"
 }
+
+func GetCheckedOutBooksService(email string) ([]models.BorrowedBook, string) {
+	var books []models.BorrowedBook
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_CHECKOUT (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN))"); err != nil {
+		return books, "An error occurred while accessing the book checkout table."
+	}
+	rows, err := database.DatabaseConnection.DB.Query("SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, bc.CHECKOUT_DATE, bc.RETURN_DATE, bc.RETURNED, bc.OVERDUE FROM BOOKS b INNER JOIN BOOK_CHECKOUT bc ON b.ISBN = bc.BOOK_ISBN WHERE bc.USER_EMAIL = ?", email)
+	if err != nil {
+		return books, "An error occurred while accessing the database."
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var book models.BorrowedBook
+		if err := rows.Scan(&book.ISBN, &book.Title, &book.Author, &book.Publisher, &book.CheckoutDate, &book.ReturnDate, &book.Returned, &book.Overdue); err != nil {
+			return books, "An error occurred while reading the book details."
+		}
+		books = append(books, book)
+	}
+	return books, ""
+}

@@ -102,3 +102,63 @@ func GetLibrarySummaryService() (models.LibrarySummary, string) {
 	}
 	return summary, ""
 }
+
+func GetBookDetailsService(isbn string) (models.Books, string) {
+	var book models.Books
+	query := "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', ') FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN WHERE b.ISBN = ? GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY"
+	row := database.DatabaseConnection.DB.QueryRow(query, isbn)
+	if err := row.Scan(&book.ISBN, &book.Title, &book.Author, &book.Publisher, &book.Quantity, &book.Genre); err != nil {
+		return book, "An error occurred while reading the book details."
+	}
+	return book, ""
+}
+
+func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_CHECKOUT (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN))"); err != nil {
+		return "An error occurred while accessing the book checkout table."
+	}
+	txn, err := database.DatabaseConnection.DB.Begin()
+	if err != nil {
+		return "An error occurred while accessing the database."
+	}
+	row := txn.QueryRow("SELECT QUANTITY, CHECKED_OUT FROM BOOKS WHERE ISBN = ?", b.ISBN)
+	var quantity, checkedOut int
+	if err := row.Scan(&quantity, &checkedOut); err != nil {
+		return "An error occurred while looking for the book in database. Please try again later."
+	}
+	if quantity == checkedOut {
+		return "The book is currently not available."
+	}
+	var thisBookCheckedOutOrNot int
+	row = txn.QueryRow("SELECT COUNT(*) FROM BOOK_CHECKOUT WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ?", userEmail, b.ISBN, false)
+	if err := row.Scan(&thisBookCheckedOutOrNot); err != nil {
+		txn.Rollback()
+		return "An error occurred while checking if the book is already checked out. Please try again later."
+	}
+	if thisBookCheckedOutOrNot > 0 {
+		txn.Rollback()
+		return "The book is already checked out by you."
+	}
+	var totalCheckedOut int
+	row = txn.QueryRow("SELECT COUNT(*) FROM BOOK_CHECKOUT WHERE USER_EMAIL = ? AND RETURNED = ?", userEmail, false)
+	if err := row.Scan(&totalCheckedOut); err != nil {
+		txn.Rollback()
+		return "An error occurred while checking the number of books checked out. Please try again later."
+	}
+	if totalCheckedOut >= 5 {
+		txn.Rollback()
+		return "You have already checked out 5 books. Please return a book to check out another."
+	}
+	if _, err = txn.Exec("UPDATE BOOKS SET CHECKED_OUT = ? WHERE ISBN = ?", checkedOut+1, b.ISBN); err != nil {
+		txn.Rollback()
+		return "An error occurred while checking out the book. Please try again later."
+	}
+	if _, err = txn.Exec("INSERT INTO BOOK_CHECKOUT VALUES (?, ?, ?, ?, ?, ?)", userEmail, b.ISBN, time.Now(), time.Now().Add(7*24*60*time.Minute), false, false); err != nil {
+		txn.Rollback()
+		return "An error occurred while checking out the book. Please try again later."
+	}
+	if err = txn.Commit(); err != nil {
+		return "An error occurred while checking out the book. Please try again later."
+	}
+	return "Book checked out successfully"
+}
