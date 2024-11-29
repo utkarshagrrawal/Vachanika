@@ -82,7 +82,7 @@ func VerifyDeleteAccountService(token string) string {
 
 func GetCheckedOutBooksService(email string) ([]models.BorrowedBook, string) {
 	var books []models.BorrowedBook
-	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE))"); err != nil {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(250), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE, RETURN_DATE))"); err != nil {
 		return books, "An error occurred while accessing the borrow history table."
 	}
 	rows, err := database.DatabaseConnection.DB.Query("SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, bh.CHECKOUT_DATE, bh.RETURN_DATE, bh.RETURNED, bh.OVERDUE FROM BOOKS b INNER JOIN BORROW_HISTORY bh ON b.ISBN = bh.BOOK_ISBN WHERE bh.USER_EMAIL = ? AND bh.RETURNED = ? AND bh.LOST = ?", email, false, false)

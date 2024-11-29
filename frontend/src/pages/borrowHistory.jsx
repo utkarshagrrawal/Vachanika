@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import StarIcon from "../components/icons/starIcon";
 
 export default function BorrowHistory() {
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -15,7 +16,13 @@ export default function BorrowHistory() {
     type: "",
   });
   const [processing, setProcessing] = useState(false);
-  const [selectedSection, setSelectedSection] = useState("current");
+  const [selectedSection, setSelectedSection] = useState("");
+  const [returningBookDetails, setReturningBookDetails] = useState({
+    isbn: "",
+    review: "",
+    rating: "",
+  });
+  const [reviewPrompt, setReviewPrompt] = useState(false);
 
   useEffect(() => {
     const scrollListener = () => {
@@ -27,6 +34,20 @@ export default function BorrowHistory() {
     window.addEventListener("scroll", scrollListener);
     return () => window.removeEventListener("scroll", scrollListener);
   }, [selectedSection]);
+
+  useEffect(() => {
+    axios
+      .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
+        withCredentials: true,
+      })
+      .then((res) => {
+        setSelectedSection("current");
+      })
+      .catch((err) => {
+        window.location.href =
+          "/signin?next=" + encodeURIComponent(window.location.pathname);
+      });
+  }, []);
 
   useEffect(() => {
     const fetchBorrowedBooks = () => {
@@ -80,13 +101,15 @@ export default function BorrowHistory() {
 
   const handleReturn = (book) => {
     setProcessing(true);
+    setReviewPrompt(false);
 
     axios
       .post(
         import.meta.env.VITE_API_URL + "/api/v1/library/return-book",
         {
-          isbn: book.isbn,
-          returnDate: new Date().toISOString(),
+          isbn: returningBookDetails.isbn,
+          review: returningBookDetails.review.substring(0, 500),
+          rating: parseInt(returningBookDetails.rating),
         },
         {
           withCredentials: true,
@@ -112,10 +135,160 @@ export default function BorrowHistory() {
       });
   };
 
-  const handleRenew = (book) => {};
+  const handleRenew = (book) => {
+    setProcessing(true);
+
+    axios
+      .post(
+        import.meta.env.VITE_API_URL + "/api/v1/library/extend-due-date",
+        {
+          isbn: book.isbn,
+        },
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        setBorrowedBooks(
+          borrowedBooks.map((b) =>
+            b.isbn === book.isbn
+              ? {
+                  ...b,
+                  returnDate: new Date(
+                    new Date(b.returnDate).getTime() + 7 * 24 * 60 * 60 * 1000
+                  ),
+                }
+              : b
+          )
+        );
+        setResponse({
+          message: res.data,
+          type: "success",
+        });
+      })
+      .catch((err) => {
+        setResponse({
+          message:
+            err.response?.data || "An error occurred while extending due date",
+          type: "error",
+        });
+      })
+      .finally(() => {
+        setProcessing(false);
+      });
+  };
+
+  const handleReportLost = (book) => {
+    setProcessing(true);
+
+    axios
+      .post(
+        import.meta.env.VITE_API_URL + "/api/v1/library/report-lost",
+        {
+          isbn: book.isbn,
+        },
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        setBorrowedBooks(
+          borrowedBooks.map((b) =>
+            b.isbn === book.isbn ? { ...b, lost: true } : b
+          )
+        );
+        setPastBorrows([...pastBorrows, { ...book, lost: true }]);
+        setResponse({
+          message: res.data,
+          type: "success",
+        });
+      })
+      .catch((err) => {
+        setResponse({
+          message:
+            err.response?.data || "An error occurred while reporting lost",
+          type: "error",
+        });
+      })
+      .finally(() => {
+        setProcessing(false);
+      });
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+      <div
+        className={`flex justify-center items-center fixed inset-0 backdrop-blur-md z-50 ${
+          !reviewPrompt && "hidden"
+        }`}
+      >
+        <div className="flex flex-col bg-white p-6 border border-gray-200 rounded-lg shadow-md w-full max-w-md">
+          <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
+            Rate & Review the Book
+          </h3>
+          <div className="flex items-center justify-center gap-1 mb-4">
+            {[...Array(5)].map((_, index) => (
+              <button
+                key={index}
+                onClick={() =>
+                  setReturningBookDetails((prev) => ({
+                    ...prev,
+                    rating: index + 1,
+                  }))
+                }
+              >
+                <StarIcon
+                  className={`size-8 transition-colors duration-200 ${
+                    returningBookDetails.rating > index
+                      ? "text-yellow-500"
+                      : "text-gray-300"
+                  }`}
+                  fill={
+                    returningBookDetails.rating > index
+                      ? "currentColor"
+                      : "none"
+                  }
+                />
+              </button>
+            ))}
+          </div>
+          <textarea
+            placeholder="Write your review here..."
+            className="w-full h-28 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-gray-600 text-sm placeholder-gray-400 resize-none mb-4"
+            value={returningBookDetails.review}
+            onChange={(e) =>
+              setReturningBookDetails((prev) => ({
+                ...prev,
+                review: e.target.value,
+              }))
+            }
+          ></textarea>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-500">
+              We appreciate your honest feedback!
+            </span>
+            <button
+              className="bg-black text-white py-2 px-6 rounded-lg hover:bg-gray-800 transition duration-300 text-sm"
+              onClick={handleReturn}
+            >
+              Submit
+            </button>
+            <button
+              className="text-gray-500 hover:text-gray-800"
+              onClick={() => {
+                setReviewPrompt(false);
+                setReturningBookDetails({
+                  isbn: "",
+                  review: "",
+                  rating: "",
+                });
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
       <div className="max-w-4xl bg-white container mx-auto p-8 space-y-4 border rounded-lg">
         <h1 className="text-3xl font-semibold">Your Borrow History</h1>
         <h5 className="text-sm text-gray-600">
@@ -176,7 +349,7 @@ export default function BorrowHistory() {
                       <span className="flex items-center gap-2 text-sm text-gray-600">
                         <span
                           className={
-                            new Date(book.returnDate) > new Date()
+                            new Date(book.returnDate) < new Date()
                               ? "bg-red-500 text-white text-xs font-semibold py-1 px-3 rounded-full"
                               : "hidden"
                           }
@@ -192,8 +365,15 @@ export default function BorrowHistory() {
                       className={`bg-white border border-gray-200 text-sm font-semibold p-2 rounded-lg hover:bg-black hover:text-white transition-colors duration-150 ${
                         processing && "cursor-not-allowed opacity-50"
                       }`}
-                      onClick={() => handleReturn(book)}
                       disabled={processing}
+                      onClick={() => {
+                        setReviewPrompt(true);
+                        setReturningBookDetails({
+                          isbn: book.isbn,
+                          review: "",
+                          rating: "",
+                        });
+                      }}
                     >
                       Return
                     </button>
@@ -202,6 +382,7 @@ export default function BorrowHistory() {
                         processing && "cursor-not-allowed opacity-50"
                       }`}
                       disabled={processing}
+                      onClick={() => handleRenew(book)}
                     >
                       Extend
                     </button>
@@ -210,6 +391,7 @@ export default function BorrowHistory() {
                         processing && "cursor-not-allowed opacity-50"
                       }`}
                       disabled={processing}
+                      onClick={() => handleReportLost(book)}
                     >
                       Report Lost
                     </button>

@@ -71,12 +71,21 @@ func AddBookService(b *models.AddBookRequest) string {
 
 func GetBooksService(page int, searchText string) ([]models.Books, string) {
 	var books []models.Books
-	skip := (page - 1) * 20
 	var query string
+	skip := (page - 1) * 20
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOKS (ISBN NVARCHAR(15) PRIMARY KEY, TITLE NVARCHAR(200), AUTHOR NVARCHAR(250), PUBLISHER NVARCHAR(250), QUANTITY INT, CREATED_AT DATE, CHECKED_OUT INT, OVERDUE INT)"); err != nil {
+		return books, "An error occurred while accessing the books table."
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_GENRES (BOOK_ISBN NVARCHAR(15), GENRE NVARCHAR(100), FOREIGN KEY (BOOK_ISBN) REFERENCES BOOKS(ISBN), PRIMARY KEY(BOOK_ISBN, GENRE))"); err != nil {
+		return books, "Error creating or accessing the book genres table in the database"
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_REVIEWS (REVIEW_ID INT PRIMARY KEY AUTO_INCREMENT, BOOK_ISBN NVARCHAR(15), USER_EMAIL NVARCHAR(250), REVIEW NVARCHAR(500), RATING INT)"); err != nil {
+		return books, "An error occurred while accessing the book reviews table."
+	}
 	if searchText == "" {
-		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', ') FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
+		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', '), COALESCE(SUM(br.RATING) / COUNT(br.BOOK_ISBN), 0) FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN LEFT JOIN BOOK_REVIEWS br ON br.BOOK_ISBN = b.ISBN GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
 	} else {
-		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', ') FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN WHERE b.TITLE LIKE '%" + searchText + "%' GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
+		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', '), COALESCE(SUM(br.RATING) / COUNT(br.BOOK_ISBN), 0) FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN LEFT JOIN BOOK_REVIEWS br ON br.BOOK_ISBN = b.ISBN WHERE b.TITLE LIKE '%" + searchText + "%' GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
 	}
 	rows, err := database.DatabaseConnection.DB.Query(query)
 	if err != nil {
@@ -85,7 +94,7 @@ func GetBooksService(page int, searchText string) ([]models.Books, string) {
 	defer rows.Close()
 	for rows.Next() {
 		var book models.Books
-		if err := rows.Scan(&book.ISBN, &book.Title, &book.Author, &book.Publisher, &book.Quantity, &book.Genre); err != nil {
+		if err := rows.Scan(&book.ISBN, &book.Title, &book.Author, &book.Publisher, &book.Quantity, &book.Genre, &book.Rating); err != nil {
 			return books, "An error occurred while reading the book details."
 		}
 		books = append(books, book)
@@ -110,17 +119,29 @@ func GetLibrarySummaryService() (models.LibrarySummary, string) {
 
 func GetBookDetailsService(isbn string) (models.Books, string) {
 	var book models.Books
-	query := "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', ') FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN WHERE b.ISBN = ? GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY"
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOKS (ISBN NVARCHAR(15) PRIMARY KEY, TITLE NVARCHAR(200), AUTHOR NVARCHAR(250), PUBLISHER NVARCHAR(250), QUANTITY INT, CREATED_AT DATE, CHECKED_OUT INT, OVERDUE INT)"); err != nil {
+		return book, "An error occurred while accessing the books table."
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_GENRES (BOOK_ISBN NVARCHAR(15), GENRE NVARCHAR(100), FOREIGN KEY (BOOK_ISBN) REFERENCES BOOKS(ISBN), PRIMARY KEY(BOOK_ISBN, GENRE))"); err != nil {
+		return book, "Error creating or accessing the book genres table in the database"
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_REVIEWS (REVIEW_ID INT PRIMARY KEY AUTO_INCREMENT, BOOK_ISBN NVARCHAR(15), USER_EMAIL NVARCHAR(250), REVIEW NVARCHAR(500), RATING INT)"); err != nil {
+		return book, "An error occurred while accessing the book reviews table."
+	}
+	query := "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', '), COALESCE(SUM(br.RATING) / COUNT(br.BOOK_ISBN), 0) FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN LEFT JOIN BOOK_REVIEWS br on br.BOOK_ISBN = b.ISBN WHERE b.ISBN = ? GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY"
 	row := database.DatabaseConnection.DB.QueryRow(query, isbn)
-	if err := row.Scan(&book.ISBN, &book.Title, &book.Author, &book.Publisher, &book.Quantity, &book.Genre); err != nil {
+	if err := row.Scan(&book.ISBN, &book.Title, &book.Author, &book.Publisher, &book.Quantity, &book.Genre, &book.Rating); err != nil {
 		return book, "An error occurred while reading the book details."
 	}
 	return book, ""
 }
 
 func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
-	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE))"); err != nil {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(250), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE, RETURN_DATE))"); err != nil {
 		return "An error occurred while accessing the borrow history table."
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS ACTIVITY_LOGS (USER_EMAIL NVARCHAR(250), ACTIVITY NVARCHAR(500), TIMESTAMP DATETIME)"); err != nil {
+		return "An error occurred while accessing the activity logs table."
 	}
 	txn, err := database.DatabaseConnection.DB.Begin()
 	if err != nil {
@@ -162,15 +183,25 @@ func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
 		txn.Rollback()
 		return "An error occurred while checking out the book. Please try again later."
 	}
+	if _, err = txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", userEmail, "Checked out the book with ISBN "+b.ISBN, time.Now()); err != nil {
+		txn.Rollback()
+		return "An error occurred while logging the activity. Please try again later."
+	}
 	if err = txn.Commit(); err != nil {
 		return "An error occurred while checking out the book. Please try again later."
 	}
 	return "Book checked out successfully"
 }
 
-func ReturnBookService(b *models.ReturnBookRequest, email string) string {
-	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE))"); err != nil {
+func ReturnBookService(b *models.BookManagementRequest) string {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(250), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE, RETURN_DATE))"); err != nil {
 		return "An error occurred while accessing the borrow history table."
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS ACTIVITY_LOGS (USER_EMAIL NVARCHAR(250), ACTIVITY NVARCHAR(500), TIMESTAMP DATETIME)"); err != nil {
+		return "An error occurred while accessing the activity logs table."
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_REVIEWS (REVIEW_ID INT PRIMARY KEY AUTO_INCREMENT, BOOK_ISBN NVARCHAR(15), USER_EMAIL NVARCHAR(250), REVIEW NVARCHAR(500), RATING INT)"); err != nil {
+		return "An error occurred while accessing the book reviews table."
 	}
 	txn, err := database.DatabaseConnection.DB.Begin()
 	if err != nil {
@@ -186,7 +217,7 @@ func ReturnBookService(b *models.ReturnBookRequest, email string) string {
 		txn.Rollback()
 		return "The book is currently not checked out."
 	}
-	row = txn.QueryRow("SELECT COUNT(*) FROM BORROW_HISTORY WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", email, b.ISBN, false, false)
+	row = txn.QueryRow("SELECT COUNT(*) FROM BORROW_HISTORY WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", b.Email, b.ISBN, false, false)
 	var bookCheckedOut int
 	if err := row.Scan(&bookCheckedOut); err != nil {
 		txn.Rollback()
@@ -200,9 +231,19 @@ func ReturnBookService(b *models.ReturnBookRequest, email string) string {
 		txn.Rollback()
 		return "An error occurred while returning the book. Please try again later."
 	}
-	if _, err := txn.Exec("UPDATE BORROW_HISTORY SET RETURNED = ?, RETURN_DATE = ? WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ?", true, b.ReturnDate, email, b.ISBN, false); err != nil {
+	if _, err := txn.Exec("UPDATE BORROW_HISTORY SET RETURNED = ?, RETURN_DATE = ? WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ?", true, time.Now(), b.Email, b.ISBN, false); err != nil {
 		txn.Rollback()
 		return "An error occurred while returning the book. Please try again later."
+	}
+	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", b.Email, "Returned the book with ISBN "+b.ISBN, time.Now()); err != nil {
+		txn.Rollback()
+		return "An error occurred while logging the activity. Please try again later."
+	}
+	if b.Review != "" {
+		if _, err := txn.Exec("INSERT INTO BOOK_REVIEWS (BOOK_ISBN, USER_EMAIL, REVIEW, RATING) VALUES (?, ?, ?, ?)", b.ISBN, b.Email, b.Review, b.Rating); err != nil {
+			txn.Rollback()
+			return "An error occurred while adding the review to the database. Please try again later."
+		}
 	}
 	if err = txn.Commit(); err != nil {
 		return "An error occurred while returning the book. Please try again later."
@@ -213,7 +254,7 @@ func ReturnBookService(b *models.ReturnBookRequest, email string) string {
 func GetBorrowedBooksHistoryService(email string, page int) ([]models.BorrowedBook, string) {
 	skip := (page - 1) * 20
 	var books []models.BorrowedBook
-	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE))"); err != nil {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(250), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE, RETURN_DATE))"); err != nil {
 		return books, "An error occurred while accessing the borrow history table."
 	}
 	rows, err := database.DatabaseConnection.DB.Query("SELECT b.ISBN, b.TITLE, b.AUTHOR, bh.CHECKOUT_DATE, bh.RETURN_DATE, bh.LOST FROM BOOKS b INNER JOIN BORROW_HISTORY bh ON b.ISBN = bh.BOOK_ISBN WHERE bh.USER_EMAIL = ? AND (bh.RETURNED = ? OR bh.LOST = ?) ORDER BY bh.CHECKOUT_DATE DESC LIMIT 20 OFFSET ?", email, true, true, skip)
@@ -228,4 +269,71 @@ func GetBorrowedBooksHistoryService(email string, page int) ([]models.BorrowedBo
 		books = append(books, book)
 	}
 	return books, ""
+}
+
+func ExtendBookReturnDateService(b *models.BookManagementRequest) string {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(250), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE, RETURN_DATE))"); err != nil {
+		return "An error occurred while accessing the borrow history table."
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS ACTIVITY_LOGS (USER_EMAIL NVARCHAR(250), ACTIVITY NVARCHAR(500), TIMESTAMP DATETIME)"); err != nil {
+		return "An error occurred while accessing the activity logs table."
+	}
+	txn, err := database.DatabaseConnection.DB.Begin()
+	if err != nil {
+		return "An error occurred while accessing the database."
+	}
+	var returnDate time.Time
+	if err := txn.QueryRow("SELECT RETURN_DATE FROM BORROW_HISTORY WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", b.Email, b.ISBN, false, false).Scan(&returnDate); err == sql.ErrNoRows {
+		txn.Rollback()
+		return "The book is not checked out by you."
+	} else if err != nil {
+		txn.Rollback()
+		return "An error occurred while checking the return date. Please try again later."
+	}
+	if _, err := txn.Exec("UPDATE BORROW_HISTORY SET RETURN_DATE = ? WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", returnDate.Add(7*24*time.Hour), b.Email, b.ISBN, false, false); err != nil {
+		txn.Rollback()
+		return "An error occurred while extending the return date. Please try again later."
+	}
+	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", b.Email, "Extended the return date for the book with ISBN "+b.ISBN, time.Now()); err != nil {
+		txn.Rollback()
+		return "An error occurred while logging the activity. Please try again later."
+	}
+	if err = txn.Commit(); err != nil {
+		return "An error occurred while extending the return date. Please try again later."
+	}
+	return "Book return date extended successfully"
+}
+
+func ReportBookLostService(b *models.BookManagementRequest) string {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(250), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE, RETURN_DATE))"); err != nil {
+		return "An error occurred while accessing the borrow history table."
+	}
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS ACTIVITY_LOGS (USER_EMAIL NVARCHAR(250), ACTIVITY NVARCHAR(500), TIMESTAMP DATETIME)"); err != nil {
+		return "An error occurred while accessing the activity logs table."
+	}
+	txn, err := database.DatabaseConnection.DB.Begin()
+	if err != nil {
+		return "An error occurred while accessing the database."
+	}
+	var isBookCheckedOut int
+	if err := txn.QueryRow("SELECT COUNT(*) FROM BORROW_HISTORY WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", b.Email, b.ISBN, false, false).Scan(&isBookCheckedOut); err != nil {
+		txn.Rollback()
+		return "An error occurred while checking if the book is checked out. Please try again later."
+	}
+	if isBookCheckedOut == 0 {
+		txn.Rollback()
+		return "The book is not checked out by you."
+	}
+	if _, err := txn.Exec("UPDATE BORROW_HISTORY SET LOST = ? WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", true, b.Email, b.ISBN, false, false); err != nil {
+		txn.Rollback()
+		return "An error occurred while reporting the book as lost. Please try again later."
+	}
+	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", b.Email, "Reported the book with ISBN "+b.ISBN+" as lost", time.Now()); err != nil {
+		txn.Rollback()
+		return "An error occurred while logging the activity. Please try again later."
+	}
+	if err = txn.Commit(); err != nil {
+		return "An error occurred while reporting the book as lost. Please try again later."
+	}
+	return "Book reported as lost successfully, please pay the fine to the library."
 }
