@@ -71,7 +71,7 @@ export default function ManageBooks() {
       document.removeEventListener("click", genreDropdownListener);
     }
     return () => document.removeEventListener("click", genreDropdownListener);
-  }, [section]);
+  }, [currentSection]);
 
   useEffect(() => {
     axios
