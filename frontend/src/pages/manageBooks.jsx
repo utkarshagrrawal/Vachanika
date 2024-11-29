@@ -137,14 +137,6 @@ export default function ManageBooks() {
   }, [currentSection, searchPage, searchText]);
 
   const handleNewBookDetails = (e) => {
-    const genres = [];
-    if (e.target.id === "genres") {
-      for (let i = 0; i < e.target.options.length; i++) {
-        if (e.target.options[i].selected) {
-          genres.push(e.target.options[i].value);
-        }
-      }
-    }
     setNewBook({
       ...newBook,
       [e.target.id]: e.target.id === "genres" ? genres : e.target.value,
@@ -158,15 +150,13 @@ export default function ManageBooks() {
     }
   };
 
-  const handleAddBook = (e) => {
-    e.preventDefault();
-
+  const handleAddBook = () => {
     setAddBookResponse("");
     setAddingBook(true);
 
     if (
       !newBook.isbn ||
-      newBook.isbn.length !== 13 ||
+      (newBook.isbn.length !== 13 && newBook.isbn.length !== 10) ||
       !newBook.isbn.match(/^[0-9]+$/)
     ) {
       setAddBookResponse("Invalid ISBN");
@@ -261,7 +251,7 @@ export default function ManageBooks() {
           <p className="text-xs text-gray-500">
             Add, search, and manage library books
           </p>
-          <div className="grid grid-cols-3 gap-2 bg-gray-100 p-1 rounded-lg mt-4">
+          <div className="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-lg mt-4">
             <div
               className={`p-1 text-center text-sm font-semibold hover:cursor-pointer ${
                 currentSection === "search" && "bg-white"
@@ -277,14 +267,6 @@ export default function ManageBooks() {
               onClick={() => setCurrentSection("add-book")}
             >
               Add Book
-            </div>
-            <div
-              className={`p-1 text-center text-sm font-semibold  hover:cursor-pointer ${
-                currentSection === "process-return" && "bg-white"
-              }`}
-              onClick={() => setCurrentSection("process-return")}
-            >
-              Process Returns
             </div>
           </div>
           {currentSection === "search" && (
@@ -342,7 +324,7 @@ export default function ManageBooks() {
             </div>
           )}
           {currentSection === "add-book" && (
-            <form onSubmit={handleAddBook} className="mt-4 flex flex-col gap-2">
+            <div className="mt-4 flex flex-col gap-2">
               <div
                 className={`border p-2 rounded-lg text-sm text-center font-semibold ${
                   addBookResponse === ""
@@ -363,13 +345,11 @@ export default function ManageBooks() {
                 onChange={handleNewBookDetails}
                 placeholder="ISBN"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-500"
-                required
               />
               <label className="text-sm font-semibold">Genres</label>
               <div className="relative">
                 <div
                   type="text"
-                  id="genres"
                   className={`w-full flex flex-wrap gap-2 px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-500 ${
                     genresVisible ? "rounded-t-lg" : "rounded-lg"
                   }`}
@@ -445,17 +425,17 @@ export default function ManageBooks() {
                 onChange={handleNewBookDetails}
                 placeholder="Quantity"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-500"
-                required
               />
               <button
                 className={`bg-gray-900 text-white text-sm font-semibold text-center py-2 px-4 rounded-lg border ${
                   addingBook && "opacity-50 cursor-not-allowed"
                 }`}
                 disabled={addingBook}
+                onClick={handleAddBook}
               >
                 {addingBook ? "Adding..." : "Add Book"}
               </button>
-            </form>
+            </div>
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">

@@ -18,6 +18,8 @@ func LibraryRouter() *mux.Router {
 	router.Handle("/checkout-book", middlewares.VerifyToken(http.HandlerFunc(handlers.CheckoutBook))).Methods("POST", "OPTIONS")
 	router.Handle("/return-book", middlewares.VerifyToken(http.HandlerFunc(handlers.ReturnBook))).Methods("POST", "OPTIONS")
 	router.Handle("/past-borrows", middlewares.VerifyToken(http.HandlerFunc(handlers.GetBorrowHistory))).Methods("GET", "OPTIONS")
+	router.Handle("/extend-due-date", middlewares.VerifyToken(http.HandlerFunc(handlers.ExtendBookReturnDate))).Methods("POST", "OPTIONS")
+	router.Handle("/lost-book", middlewares.VerifyToken(http.HandlerFunc(handlers.ReportBookLost))).Methods("POST", "OPTIONS")
 
 	return router
 }

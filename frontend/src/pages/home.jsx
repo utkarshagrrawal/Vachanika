@@ -103,7 +103,7 @@ export default function Home() {
             </span>
             <div className="flex items-center mt-4">
               <img
-                src="https://placehold.co/50x50"
+                src="https://avatar.iran.liara.run/public/boy"
                 alt="User"
                 className="h-12 w-12 rounded-full"
               />
@@ -123,7 +123,7 @@ export default function Home() {
             </span>
             <div className="flex items-center mt-4">
               <img
-                src="https://placehold.co/50x50"
+                src="https://avatar.iran.liara.run/public/boy"
                 alt="User"
                 className="h-12 w-12 rounded-full"
               />

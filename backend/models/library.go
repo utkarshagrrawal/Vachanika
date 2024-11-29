@@ -18,12 +18,13 @@ type LibrarySummary struct {
 }
 
 type Books struct {
-	ISBN      string `json:"isbn"`
-	Title     string `json:"title"`
-	Author    string `json:"author"`
-	Publisher string `json:"publisher"`
-	Genre     string `json:"genre"`
-	Quantity  string `json:"quantity"`
+	ISBN      string  `json:"isbn"`
+	Title     string  `json:"title"`
+	Author    string  `json:"author"`
+	Publisher string  `json:"publisher"`
+	Genre     string  `json:"genre"`
+	Quantity  string  `json:"quantity"`
+	Rating    float64 `json:"rating"`
 }
 
 type OpenLibraryResponse struct {
@@ -53,7 +54,9 @@ type BorrowBookRequest struct {
 	ISBN string `json:"isbn"`
 }
 
-type ReturnBookRequest struct {
-	ISBN       string    `json:"isbn"`
-	ReturnDate time.Time `json:"returnDate"`
+type BookManagementRequest struct {
+	ISBN   string `json:"isbn"`
+	Email  string `json:"email"`
+	Review string `json:"review"`
+	Rating int    `json:"rating"`
 }

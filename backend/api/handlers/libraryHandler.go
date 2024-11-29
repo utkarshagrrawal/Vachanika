@@ -118,7 +118,7 @@ func CheckoutBook(w http.ResponseWriter, r *http.Request) {
 
 func ReturnBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var returnBookDetails models.ReturnBookRequest
+	var returnBookDetails models.BookManagementRequest
 	if err := json.NewDecoder(r.Body).Decode(&returnBookDetails); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode("Error getting the book details")
@@ -135,7 +135,8 @@ func ReturnBook(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Error getting the user details")
 		return
 	}
-	returnBookResponse := services.ReturnBookService(&returnBookDetails, email)
+	returnBookDetails.Email = email
+	returnBookResponse := services.ReturnBookService(&returnBookDetails)
 	if returnBookResponse != "Book returned successfully" {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(returnBookResponse)
@@ -170,4 +171,62 @@ func GetBorrowHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(borrowHistory)
+}
+
+func ExtendBookReturnDate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var extendReturnDateDetails models.BookManagementRequest
+	if err := json.NewDecoder(r.Body).Decode(&extendReturnDateDetails); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Error getting the book details")
+		return
+	}
+	if extendReturnDateDetails.ISBN == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("ISBN cannot be empty")
+		return
+	}
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user details")
+		return
+	}
+	extendReturnDateDetails.Email = email
+	extendReturnDateResponse := services.ExtendBookReturnDateService(&extendReturnDateDetails)
+	if extendReturnDateResponse != "Book return date extended successfully" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(extendReturnDateResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(extendReturnDateResponse)
+}
+
+func ReportBookLost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var reportBookLostDetails models.BookManagementRequest
+	if err := json.NewDecoder(r.Body).Decode(&reportBookLostDetails); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Error getting the book details")
+		return
+	}
+	if reportBookLostDetails.ISBN == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("ISBN cannot be empty")
+		return
+	}
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user details")
+		return
+	}
+	reportBookLostDetails.Email = email
+	reportBookLostResponse := services.ReportBookLostService(&reportBookLostDetails)
+	if reportBookLostResponse != "Book reported as lost successfully, please pay the fine to the library." {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(reportBookLostResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(reportBookLostResponse)
 }

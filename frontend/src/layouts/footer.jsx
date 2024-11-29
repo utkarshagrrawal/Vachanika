@@ -62,7 +62,7 @@ export default function Footer() {
               Github
             </a>
             <a
-              href="https://www.linkedin.com"
+              href="https://in.linkedin.com/in/utkarsh-agrawal-a7a756200"
               target="_blank"
               rel="noreferrer noopener"
             >

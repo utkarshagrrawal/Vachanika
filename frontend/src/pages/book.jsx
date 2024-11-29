@@ -6,7 +6,6 @@ import StarIcon from "../components/icons/starIcon";
 export default function Book() {
   const { isbn } = useParams();
   const [book, setBook] = useState({});
-  const [section, setSection] = useState("description");
   const [processing, setProcessing] = useState(false);
   const [response, setResponse] = useState("");
 
@@ -111,7 +110,7 @@ export default function Book() {
             </div>
             {book.quantity > 0 && (
               <button
-                className={`mt-4 bg-black text-white ease-in-out text-md font-semibold px-4 py-2 rounded-lg ${
+                className={`mt-4 bg-gray-800 text-white text-sm font-semibold p-2 rounded-lg ${
                   processing && "cursor-not-allowed opacity-50"
                 }`}
                 disabled={processing}
@@ -120,31 +119,19 @@ export default function Book() {
                 {processing ? "Processing..." : "Borrow"}
               </button>
             )}
+            <button
+              className={`mt-4 bg-gray-200 text-gray-800 text-sm font-semibold p-2 rounded-lg ml-2 ${
+                processing && "opacity-50 cursor-not-allowed"
+              }`}
+              disabled={processing}
+            >
+              Add to Wishlist
+            </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 mt-8 w-full bg-gray-100 rounded-md p-1">
-          <div
-            className={`rounded-md p-2 text-sm text-center hover:cursor-pointer transition-colors duration-100 ${
-              section === "description" && "bg-white font-semibold"
-            }`}
-            onClick={() => setSection("description")}
-          >
-            Description
-          </div>
-          <div
-            className={`rounded-md p-2 text-sm text-center hover:cursor-pointer transition-colors duration-100 ${
-              section === "reviews" && "bg-white font-semibold"
-            }`}
-            onClick={() => setSection("reviews")}
-          >
-            Reviews
-          </div>
+        <div className="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm text-center font-semibold">
+          Reviews
         </div>
-        {section === "description" && (
-          <div className="mt-4 w-full p-4 border rounded-lg">
-            <p className="text-lg text-gray-700">{book.description}</p>
-          </div>
-        )}
       </div>
     </div>
   );
