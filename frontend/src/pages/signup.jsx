@@ -74,6 +74,10 @@ export default function Signup() {
         setErrorMessage(
           err.response?.data || "An error occurred. Please try again."
         );
+        setSignupData({
+          ...signupData,
+          dob: signupData.dob.split("T")[0],
+        });
       })
       .finally(() => {
         setLoading(false);

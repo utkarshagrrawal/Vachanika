@@ -33,52 +33,26 @@ export default function UserProfile() {
     dob: "",
   });
   const [personalDetailsMessage, setPersonalDetailsMessage] = useState("");
-  const [wishlist, setWishlist] = useState([]);
-  const [borrowed, setBorrowed] = useState([]);
   const [deletePromptVisible, setDeletePromptVisible] = useState(false);
   const [userDeleteResponse, setUserDeleteResponse] = useState("");
 
   useEffect(() => {
-    const fetchUserDetails = () => {
-      axios
-        .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
-          withCredentials: true,
-        })
-        .then((res) => {
-          setUser(res.data);
-        })
-        .catch((err) => {
-          console.error(
-            err.response?.data ||
-              "An error occurred while fetching user details."
-          );
-        });
-    };
-    if (section === "personal") {
-      fetchUserDetails();
-    }
-  }, [section]);
-
-  useEffect(() => {
-    const fetchBorrowedBooks = () => {
-      axios
-        .get(import.meta.env.VITE_API_URL + "/api/v1/user/borrowed-books", {
-          withCredentials: true,
-        })
-        .then((res) => {
-          setBorrowed(res.data);
-        })
-        .catch((err) => {
-          console.error(
-            err.response?.data ||
-              "An error occurred while fetching borrowed books."
-          );
-        });
-    };
-    if (section === "borrowed-books") {
-      fetchBorrowedBooks();
-    }
-  }, [section]);
+    axios
+      .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
+        withCredentials: true,
+      })
+      .then((res) => {
+        setUser(res.data);
+        if (res.data.role === "admin") {
+          window.location.href = "/admin/dashboard";
+        }
+      })
+      .catch((err) => {
+        console.error(
+          err.response?.data || "An error occurred while fetching user details."
+        );
+      });
+  }, []);
 
   const handleUserDetailsChange = (e) => {
     setUser((prev) => ({
@@ -191,7 +165,7 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen w-full container mx-auto p-4">
       <div
-        className={`flex justify-center items-center absolute inset-0 min-h-screen w-full backdrop-blur-md ${
+        className={`flex justify-center items-center absolute inset-0 min-h-screen backdrop-blur-md ${
           !deletePromptVisible && "hidden"
         }`}
       >
@@ -253,36 +227,6 @@ export default function UserProfile() {
           >
             <LockIcon className="h-6 w-6" />
             Security
-          </a>
-        </div>
-        <div
-          className={`flex-1 py-1 px-4 text-sm ${
-            section === "wishlist" &&
-            "bg-white shadow-md rounded-md font-semibold"
-          }`}
-          onClick={() => setSection("wishlist")}
-        >
-          <a
-            href="/user/profile/wishlist"
-            className="flex justify-center items-center gap-2"
-          >
-            <HeartIcon className="h-6 w-6" />
-            Wishlist
-          </a>
-        </div>
-        <div
-          className={`flex-1 py-1 px-4 text-sm ${
-            section === "borrowed-books" &&
-            "bg-white shadow-md rounded-md font-semibold"
-          }`}
-          onClick={() => setSection("borrowed-books")}
-        >
-          <a
-            href="/user/profile/borrowed-books"
-            className="flex justify-center items-center gap-2"
-          >
-            <BookIcon className="h-6 w-6" />
-            Borrowed
           </a>
         </div>
         <div
@@ -508,72 +452,6 @@ export default function UserProfile() {
               Change Password
             </button>
           </form>
-        </div>
-      )}
-      {section === "wishlist" && (
-        <div className="mt-4 p-4 border rounded-md">
-          <h2 className="text-xl font-bold">Wishlist</h2>
-          <span className="text-gray-500 text-sm">
-            Manage your wishlist of books
-          </span>
-          <div className="mt-4 space-y-4">
-            {wishlist.length === 0 ? (
-              <div className="text-gray-500 text-sm text-center">
-                Your wishlist is empty
-              </div>
-            ) : (
-              wishlist.map((book, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <BookmarkIcon className="h-6 w-6" />
-                    <span>{book.name}</span>
-                  </div>
-                  <button className="border bg-white hover:bg-gray-100 duration-200 py-2 px-4 rounded-md">
-                    Remove
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-      {section === "borrowed-books" && (
-        <div className="mt-4 p-4 border rounded-md">
-          <h2 className="text-xl font-bold">Borrowed Books</h2>
-          <span className="text-gray-500 text-sm">
-            Manage your borrowed books and return them on time
-          </span>
-          <div className="mt-4 space-y-4">
-            {borrowed.length === 0 ? (
-              <div className="text-gray-500 text-sm text-center">
-                You have not borrowed any books yet
-              </div>
-            ) : (
-              borrowed.map((book, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <BookIcon className="h-6 w-6" />
-                    <span>{book.title}</span>
-                  </div>
-                  <span className="text-gray-500 text-sm">
-                    Due by{" "}
-                    {dateFormatter.format(new Date(book.returnDate || ""))}
-                  </span>
-                  <button className="border bg-white hover:bg-gray-100 duration-200 py-1 px-4 rounded-md">
-                    {new Date(book.returnDate) > new Date()
-                      ? "Extend Due Date"
-                      : "Return"}
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
         </div>
       )}
       {section === "settings" && (

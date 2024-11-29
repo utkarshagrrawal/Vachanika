@@ -50,7 +50,7 @@ func GetBooks(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Invalid page number")
 		return
 	}
-	books, booksResponse := services.GetBooksService(pageNumber)
+	books, booksResponse := services.GetBooksService(pageNumber, values.Get("search"))
 	if booksResponse != "" {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(booksResponse)
@@ -114,4 +114,60 @@ func CheckoutBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(borrowBookResponse)
+}
+
+func ReturnBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var returnBookDetails models.ReturnBookRequest
+	if err := json.NewDecoder(r.Body).Decode(&returnBookDetails); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Error getting the book details")
+		return
+	}
+	if returnBookDetails.ISBN == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("ISBN cannot be empty")
+		return
+	}
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user details")
+		return
+	}
+	returnBookResponse := services.ReturnBookService(&returnBookDetails, email)
+	if returnBookResponse != "Book returned successfully" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(returnBookResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(returnBookResponse)
+}
+
+func GetBorrowHistory(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user details")
+		return
+	}
+	values := r.URL.Query()
+	page := values.Get("page")
+	if page == "" {
+		page = "1"
+	}
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Invalid page number")
+		return
+	}
+	borrowHistory, borrowHistoryResponse := services.GetBorrowedBooksHistoryService(email, pageNumber)
+	if borrowHistoryResponse != "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(borrowHistoryResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(borrowHistory)
 }

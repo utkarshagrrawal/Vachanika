@@ -33,7 +33,7 @@ export default function BrowseBooks() {
         }
       )
       .then((res) => {
-        res.status === 200 && setBooks(res.data);
+        setBooks(res.data);
       })
       .catch((err) => {
         setError(

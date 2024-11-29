@@ -10,6 +10,8 @@ import BrowseBooks from "./pages/browse";
 import ManageBooks from "./pages/manageBooks";
 import Book from "./pages/book";
 import Signout from "./pages/signout";
+import BorrowHistory from "./pages/borrowHistory";
+import AdminProfile from "./pages/adminProfile";
 
 function App() {
   return (
@@ -31,8 +33,10 @@ function App() {
           path="/manage-books"
           element={<Navigate to="/manage-books/search" />}
         />
+        <Route path="/admin/dashboard" element={<AdminProfile />} />
         <Route path="/book/:isbn" element={<Book />} />
         <Route path="/manage-books/:section" element={<ManageBooks />} />
+        <Route path="/borrow-history" element={<BorrowHistory />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

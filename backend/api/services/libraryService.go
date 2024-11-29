@@ -57,7 +57,7 @@ func AddBookService(b *models.AddBookRequest) string {
 	if _, err = txn.Exec("INSERT INTO BOOKS VALUES (?, ?, ?, ?, ?, ?, ?, ?)", b.ISBN, bookDetails.Docs[0].Title, bookDetails.Docs[0].AuthorName[0], bookDetails.Docs[0].Publisher[0], b.Quantity, time.Now(), 0, 0); err != nil {
 		return "An error occurred while adding the book to the database. Please try again later."
 	}
-	for _, genre := range bookDetails.Docs[0].Subject {
+	for _, genre := range b.Genres {
 		if _, err = txn.Exec("INSERT INTO BOOK_GENRES VALUES (?, ?)", b.ISBN, genre); err != nil {
 			txn.Rollback()
 			return "An error occurred while adding the book genres to the database. Please try again later."
@@ -69,10 +69,15 @@ func AddBookService(b *models.AddBookRequest) string {
 	return "Book added successfully"
 }
 
-func GetBooksService(page int) ([]models.Books, string) {
+func GetBooksService(page int, searchText string) ([]models.Books, string) {
 	var books []models.Books
 	skip := (page - 1) * 20
-	query := "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', ') FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
+	var query string
+	if searchText == "" {
+		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', ') FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
+	} else {
+		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', ') FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN WHERE b.TITLE LIKE '%" + searchText + "%' GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
+	}
 	rows, err := database.DatabaseConnection.DB.Query(query)
 	if err != nil {
 		return books, "An error occurred while accessing the database."
@@ -114,8 +119,8 @@ func GetBookDetailsService(isbn string) (models.Books, string) {
 }
 
 func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
-	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_CHECKOUT (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN))"); err != nil {
-		return "An error occurred while accessing the book checkout table."
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE))"); err != nil {
+		return "An error occurred while accessing the borrow history table."
 	}
 	txn, err := database.DatabaseConnection.DB.Begin()
 	if err != nil {
@@ -130,7 +135,7 @@ func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
 		return "The book is currently not available."
 	}
 	var thisBookCheckedOutOrNot int
-	row = txn.QueryRow("SELECT COUNT(*) FROM BOOK_CHECKOUT WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ?", userEmail, b.ISBN, false)
+	row = txn.QueryRow("SELECT COUNT(*) FROM BORROW_HISTORY WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", userEmail, b.ISBN, false, false)
 	if err := row.Scan(&thisBookCheckedOutOrNot); err != nil {
 		txn.Rollback()
 		return "An error occurred while checking if the book is already checked out. Please try again later."
@@ -140,7 +145,7 @@ func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
 		return "The book is already checked out by you."
 	}
 	var totalCheckedOut int
-	row = txn.QueryRow("SELECT COUNT(*) FROM BOOK_CHECKOUT WHERE USER_EMAIL = ? AND RETURNED = ?", userEmail, false)
+	row = txn.QueryRow("SELECT COUNT(*) FROM BORROW_HISTORY WHERE USER_EMAIL = ? AND RETURNED = ? AND LOST = ?", userEmail, false, false)
 	if err := row.Scan(&totalCheckedOut); err != nil {
 		txn.Rollback()
 		return "An error occurred while checking the number of books checked out. Please try again later."
@@ -153,7 +158,7 @@ func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
 		txn.Rollback()
 		return "An error occurred while checking out the book. Please try again later."
 	}
-	if _, err = txn.Exec("INSERT INTO BOOK_CHECKOUT VALUES (?, ?, ?, ?, ?, ?)", userEmail, b.ISBN, time.Now(), time.Now().Add(7*24*60*time.Minute), false, false); err != nil {
+	if _, err = txn.Exec("INSERT INTO BORROW_HISTORY VALUES (?, ?, ?, ?, ?, ?, ?)", userEmail, b.ISBN, time.Now(), time.Now().Add(7*24*60*time.Minute), false, false, false); err != nil {
 		txn.Rollback()
 		return "An error occurred while checking out the book. Please try again later."
 	}
@@ -161,4 +166,66 @@ func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
 		return "An error occurred while checking out the book. Please try again later."
 	}
 	return "Book checked out successfully"
+}
+
+func ReturnBookService(b *models.ReturnBookRequest, email string) string {
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE))"); err != nil {
+		return "An error occurred while accessing the borrow history table."
+	}
+	txn, err := database.DatabaseConnection.DB.Begin()
+	if err != nil {
+		return "An error occurred while accessing the database."
+	}
+	var checkedOut int
+	row := txn.QueryRow("SELECT CHECKED_OUT FROM BOOKS WHERE ISBN = ?", b.ISBN)
+	if err := row.Scan(&checkedOut); err != nil {
+		txn.Rollback()
+		return "An error occurred while checking for the book in the database. Please try again later."
+	}
+	if checkedOut == 0 {
+		txn.Rollback()
+		return "The book is currently not checked out."
+	}
+	row = txn.QueryRow("SELECT COUNT(*) FROM BORROW_HISTORY WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ? AND LOST = ?", email, b.ISBN, false, false)
+	var bookCheckedOut int
+	if err := row.Scan(&bookCheckedOut); err != nil {
+		txn.Rollback()
+		return "An error occurred while checking if the book is checked out. Please try again later."
+	}
+	if bookCheckedOut == 0 {
+		txn.Rollback()
+		return "The book is not checked out by you."
+	}
+	if _, err := txn.Exec("UPDATE BOOKS SET CHECKED_OUT = ? WHERE ISBN = ?", checkedOut-1, b.ISBN); err != nil {
+		txn.Rollback()
+		return "An error occurred while returning the book. Please try again later."
+	}
+	if _, err := txn.Exec("UPDATE BORROW_HISTORY SET RETURNED = ?, RETURN_DATE = ? WHERE USER_EMAIL = ? AND BOOK_ISBN = ? AND RETURNED = ?", true, b.ReturnDate, email, b.ISBN, false); err != nil {
+		txn.Rollback()
+		return "An error occurred while returning the book. Please try again later."
+	}
+	if err = txn.Commit(); err != nil {
+		return "An error occurred while returning the book. Please try again later."
+	}
+	return "Book returned successfully"
+}
+
+func GetBorrowedBooksHistoryService(email string, page int) ([]models.BorrowedBook, string) {
+	skip := (page - 1) * 20
+	var books []models.BorrowedBook
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(100), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE))"); err != nil {
+		return books, "An error occurred while accessing the borrow history table."
+	}
+	rows, err := database.DatabaseConnection.DB.Query("SELECT b.ISBN, b.TITLE, b.AUTHOR, bh.CHECKOUT_DATE, bh.RETURN_DATE, bh.LOST FROM BOOKS b INNER JOIN BORROW_HISTORY bh ON b.ISBN = bh.BOOK_ISBN WHERE bh.USER_EMAIL = ? AND (bh.RETURNED = ? OR bh.LOST = ?) ORDER BY bh.CHECKOUT_DATE DESC LIMIT 20 OFFSET ?", email, true, true, skip)
+	if err != nil {
+		return books, "An error occurred while accessing the database."
+	}
+	for rows.Next() {
+		var book models.BorrowedBook
+		if err := rows.Scan(&book.ISBN, &book.Title, &book.Author, &book.CheckoutDate, &book.ReturnDate, &book.Lost); err != nil {
+			return books, "An error occurred while reading the book details."
+		}
+		books = append(books, book)
+	}
+	return books, ""
 }
