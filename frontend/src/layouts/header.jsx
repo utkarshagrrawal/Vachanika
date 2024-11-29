@@ -29,7 +29,7 @@ export default function Header({ userDetails }) {
           My Wishlist
         </a>
         <a
-          href="#borrow-history"
+          href="/borrow-history"
           className="hover:text-indigo-600 transition duration-300"
         >
           Borrow History
@@ -43,12 +43,21 @@ export default function Header({ userDetails }) {
           </a>
         )}
         {userDetails?.name ? (
-          <a
-            href="/user/profile"
-            className="hover:text-indigo-600 transition duration-300"
-          >
-            Profile
-          </a>
+          userDetails.role === "admin" ? (
+            <a
+              href="/admin/dashboard"
+              className="block hover:text-indigo-600 transition duration-300"
+            >
+              Profile
+            </a>
+          ) : (
+            <a
+              href="/user/profile"
+              className="block hover:text-indigo-600 transition duration-300"
+            >
+              Profile
+            </a>
+          )
         ) : (
           <a
             href="/signin"
@@ -104,7 +113,7 @@ export default function Header({ userDetails }) {
             </li>
             <li>
               <a
-                href="#borrow-history"
+                href="/borrow-history"
                 className="block hover:text-indigo-600 transition duration-300"
               >
                 Borrow History
@@ -122,12 +131,21 @@ export default function Header({ userDetails }) {
             )}
             <li>
               {userDetails?.name ? (
-                <a
-                  href="/user/profile"
-                  className="block hover:text-indigo-600 transition duration-300"
-                >
-                  Profile
-                </a>
+                userDetails.role === "admin" ? (
+                  <a
+                    href="/admin/dashboard"
+                    className="block hover:text-indigo-600 transition duration-300"
+                  >
+                    Profile
+                  </a>
+                ) : (
+                  <a
+                    href="/user/profile"
+                    className="block hover:text-indigo-600 transition duration-300"
+                  >
+                    Profile
+                  </a>
+                )
               ) : (
                 <a
                   href="/signin"

@@ -1,10 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 
 export default function ManageBooks() {
   const { section } = useParams();
   const [user, setUser] = useState({});
+  const [genreOptions, setGenreOptions] = useState([
+    "Fiction",
+    "Non-Fiction",
+    "Fantasy",
+    "Science Fiction",
+    "Mystery",
+    "Thriller",
+    "Romance",
+    "Horror",
+    "Biography",
+    "Autobiography",
+    "History",
+    "Science",
+    "Self-help",
+    "Cookbooks",
+    "Travel",
+    "Art",
+    "Poetry",
+    "Religion",
+    "Philosophy",
+    "Children",
+    "Young Adult",
+    "Comics",
+    "Manga",
+    "Graphic Novels",
+    "Others",
+  ]);
+  const [filteredGenres, setFilteredGenres] = useState(genreOptions);
+  const genresRef = useRef(null);
+  const [genresVisible, setGenresVisible] = useState(false);
   const [currentSection, setCurrentSection] = useState(section || "search");
   const [searchResponse, setSearchResponse] = useState("");
   const [searchPage, setSearchPage] = useState(1);
@@ -14,15 +44,34 @@ export default function ManageBooks() {
     checkedOut: 0,
     overdue: 0,
   });
-  const [foundBooks, setFoundBooks] = useState([]);
-  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [books, setBooks] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [addBookResponse, setAddBookResponse] = useState("");
   const [newBook, setNewBook] = useState({
     isbn: "",
+    genres: [],
+    searchText: "",
     quantity: 0,
   });
   const [addingBook, setAddingBook] = useState(false);
+
+  useEffect(() => {
+    const genreDropdownListener = (e) => {
+      if (
+        genresRef.current &&
+        !genresRef.current.contains(e.target) &&
+        e.target.id !== "searchText"
+      ) {
+        setGenresVisible(false);
+      }
+    };
+    if (currentSection === "add-book") {
+      document.addEventListener("click", genreDropdownListener);
+    } else {
+      document.removeEventListener("click", genreDropdownListener);
+    }
+    return () => document.removeEventListener("click", genreDropdownListener);
+  }, [section]);
 
   useEffect(() => {
     axios
@@ -42,76 +91,71 @@ export default function ManageBooks() {
   }, []);
 
   useEffect(() => {
+    axios
+      .get(import.meta.env.VITE_API_URL + "/api/v1/library/library-summary", {
+        withCredentials: true,
+      })
+      .then((res) => {
+        setStatistics({
+          totalBooks: res.data.totalBooks,
+          booksAddedThisMonth: res.data.booksAddedThisMonth,
+          checkedOut: res.data.totalCheckedOut,
+          checkedOutThisMonth: res.data.booksCheckedOutThisMonth,
+          overdue: res.data.totalOverdue,
+          overdueThisMonth: res.data.booksOverdueThisMonth,
+        });
+      })
+      .catch((err) => {
+        setSearchResponse(err.response?.data || "An error occurred");
+      });
+  }, []);
+
+  useEffect(() => {
     const fetchBooks = () => {
       axios
         .get(
           import.meta.env.VITE_API_URL +
             "/api/v1/library/books?page=" +
-            searchPage,
+            searchPage +
+            "&search=" +
+            searchText,
           {
             withCredentials: true,
           }
         )
         .then((res) => {
-          if (res.status === 200) {
-            setFoundBooks(res.data);
-            setFilteredBooks(res.data);
-          }
+          setBooks(res.data);
         })
         .catch((err) => {
           setSearchResponse(err.response?.data || "An error occurred");
         });
     };
-    const fetchStatistics = () => {
-      axios
-        .get(import.meta.env.VITE_API_URL + "/api/v1/library/library-summary", {
-          withCredentials: true,
-        })
-        .then((res) => {
-          if (res.status === 200) {
-            setStatistics({
-              totalBooks: res.data.totalBooks,
-              booksAddedThisMonth: res.data.booksAddedThisMonth,
-              checkedOut: res.data.totalCheckedOut,
-              checkedOutThisMonth: res.data.booksCheckedOutThisMonth,
-              overdue: res.data.totalOverdue,
-              overdueThisMonth: res.data.booksOverdueThisMonth,
-            });
-          }
-        })
-        .catch((err) => {
-          setSearchResponse(err.response?.data || "An error occurred");
-        });
-    };
-    fetchStatistics();
     if (currentSection === "search") {
       setSearchResponse("");
       fetchBooks();
     }
-  }, [currentSection, searchPage]);
+  }, [currentSection, searchPage, searchText]);
 
   const handleNewBookDetails = (e) => {
+    const genres = [];
+    if (e.target.id === "genres") {
+      for (let i = 0; i < e.target.options.length; i++) {
+        if (e.target.options[i].selected) {
+          genres.push(e.target.options[i].value);
+        }
+      }
+    }
     setNewBook({
       ...newBook,
-      [e.target.id]: e.target.value,
+      [e.target.id]: e.target.id === "genres" ? genres : e.target.value,
     });
-  };
-
-  const handleSearch = (e) => {
-    setSearchText(e.target.value);
-    const filteredArray = foundBooks.filter((book) => {
-      if (book.title.toLowerCase().includes(e.target.value.toLowerCase())) {
-        return book;
-      } else if (book.isbn.includes(e.target.value)) {
-        return book;
-      } else if (
-        book.author.toLowerCase().includes(e.target.value.toLowerCase())
-      ) {
-        return book;
-      }
-    });
-    if (e.target.value.length > 0) setFilteredBooks(filteredArray);
-    else if (e.target.value.length === 0) setFilteredBooks(foundBooks);
+    if (e.target.id === "searchText") {
+      setFilteredGenres(
+        genreOptions.filter((genre) =>
+          genre.toLowerCase().includes(e.target.value.toLowerCase())
+        )
+      );
+    }
   };
 
   const handleAddBook = (e) => {
@@ -129,6 +173,11 @@ export default function ManageBooks() {
       setAddingBook(false);
       return;
     }
+    if (newBook.genres.length === 0) {
+      setAddBookResponse("Select at least one genre");
+      setAddingBook(false);
+      return;
+    }
     if (newBook.quantity > 10 || newBook.quantity < 1) {
       setAddBookResponse("Quantity should be between 1 and 10");
       setAddingBook(false);
@@ -141,13 +190,14 @@ export default function ManageBooks() {
         {
           isbn: newBook.isbn,
           quantity: parseInt(newBook.quantity),
+          genres: newBook.genres,
         },
         {
           withCredentials: true,
         }
       )
       .then((res) => {
-        res.status === 200 && setAddBookResponse(res.data);
+        setAddBookResponse(res.data);
       })
       .catch((err) => {
         setAddBookResponse(err.response?.data || "An error occurred");
@@ -251,16 +301,19 @@ export default function ManageBooks() {
               <input
                 type="text"
                 value={searchText}
-                onChange={handleSearch}
+                onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Search for a book..."
                 className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
               />
               <div className="mt-4 flex flex-col space-y-4">
-                {filteredBooks.length > 0 ? (
-                  filteredBooks.map((book) => (
+                {books.length > 0 ? (
+                  books.map((book) => (
                     <div
                       key={book.isbn}
-                      className="flex gap-4 items-center justify-between bg-white shadow-md py-2 px-4 border rounded-lg hover:shadow-lg transition-shadow duration-200"
+                      className="flex gap-4 items-center justify-between bg-white shadow-md py-2 px-4 border rounded-lg hover:shadow-lg transition-shadow duration-200 hover:cursor-pointer"
+                      onClick={() =>
+                        (window.location.href = "/book/" + book.isbn)
+                      }
                     >
                       <div className="flex flex-col gap-1">
                         <span className="text-lg font-bold text-gray-800">
@@ -309,9 +362,80 @@ export default function ManageBooks() {
                 value={newBook.isbn}
                 onChange={handleNewBookDetails}
                 placeholder="ISBN"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-500"
                 required
               />
+              <label className="text-sm font-semibold">Genres</label>
+              <div className="relative">
+                <div
+                  type="text"
+                  id="genres"
+                  className={`w-full flex flex-wrap gap-2 px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-500 ${
+                    genresVisible ? "rounded-t-lg" : "rounded-lg"
+                  }`}
+                >
+                  {newBook.genres.map((genre, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center bg-gray-100 border border-gray-300 rounded-full px-3 py-1 text-sm font-medium text-gray-700"
+                    >
+                      <span>{genre}</span>
+                      <button
+                        className="ml-2 bg-gray-700 text-white rounded-full p-1 flex items-center justify-center w-5 h-5 hover:bg-black transition duration-200"
+                        onClick={() =>
+                          setNewBook({
+                            ...newBook,
+                            genres: newBook.genres.filter((g) => g !== genre),
+                          })
+                        }
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                  <input
+                    id="searchText"
+                    className="text-sm placeholder-gray-500 focus:outline-none"
+                    placeholder="Search for a genre..."
+                    value={newBook.searchText}
+                    onChange={handleNewBookDetails}
+                    onFocus={() => setGenresVisible(true)}
+                  />
+                </div>
+                <div
+                  className={`absolute w-full z-50 bg-white max-h-48 overflow-auto border border-gray-300 rounded-b-lg shadow-lg ${
+                    !genresVisible && "hidden"
+                  }`}
+                  ref={(node) => (genresRef.current = node)}
+                >
+                  {filteredGenres.length === 0 ? (
+                    <div className="text-sm text-gray-500 p-3">
+                      No genres found
+                    </div>
+                  ) : (
+                    filteredGenres.map((genre) => (
+                      <div
+                        key={genre}
+                        className={`p-3 text-sm text-gray-700 cursor-pointer border-b border-gray-200 hover:bg-gray-100 transition ${
+                          newBook.genres.includes(genre) &&
+                          "bg-gray-200 font-semibold"
+                        }`}
+                        onClick={() => {
+                          setNewBook({
+                            ...newBook,
+                            genres: newBook.genres.includes(genre)
+                              ? newBook.genres.filter((g) => g !== genre)
+                              : [...newBook.genres, genre],
+                          });
+                          document.getElementById("searchText").focus();
+                        }}
+                      >
+                        {genre}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
               <label className="text-sm font-semibold">Quantity</label>
               <input
                 type="number"
@@ -320,7 +444,7 @@ export default function ManageBooks() {
                 value={newBook.quantity}
                 onChange={handleNewBookDetails}
                 placeholder="Quantity"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-500"
                 required
               />
               <button
