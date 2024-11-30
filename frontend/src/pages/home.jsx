@@ -23,7 +23,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <Header userDetails={userDetails} />
+      <Header className={"bg-white"} userDetails={userDetails} />
 
       <section className="text-center py-12 px-4 md:py-24 md:px-12">
         <h1 className="text-4xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">

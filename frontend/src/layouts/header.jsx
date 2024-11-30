@@ -1,11 +1,13 @@
 import { useState } from "react";
-import Logo from "../assets/logo.jpg";
+import Logo from "../assets/logo.png";
 
-export default function Header({ userDetails }) {
+export default function Header(props) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="flex justify-between items-center py-4 px-6 lg:px-12 bg-white shadow-sm sticky top-0 z-50">
+    <header
+      className={`flex justify-between items-center py-4 px-6 lg:px-12 shadow-sm sticky top-0 z-50 ${props?.className}`}
+    >
       {/* Logo Section */}
       <div className="flex items-center text-2xl font-bold text-gray-800">
         <img src={Logo} alt="Vachanika Logo" className="h-10 w-10 mr-2" />
@@ -34,7 +36,7 @@ export default function Header({ userDetails }) {
         >
           Borrow History
         </a>
-        {userDetails?.role === "librarian" && (
+        {props?.userDetails?.role === "librarian" && (
           <a
             href="/manage-books"
             className="hover:text-indigo-600 transition duration-300"
@@ -42,8 +44,8 @@ export default function Header({ userDetails }) {
             For Librarians
           </a>
         )}
-        {userDetails?.name ? (
-          userDetails.role === "admin" ? (
+        {props.userDetails?.name ? (
+          props.userDetails?.role === "admin" ? (
             <a
               href="/admin/dashboard"
               className="block hover:text-indigo-600 transition duration-300"
@@ -119,7 +121,7 @@ export default function Header({ userDetails }) {
                 Borrow History
               </a>
             </li>
-            {userDetails?.role === "librarian" && (
+            {props?.userDetails?.role === "librarian" && (
               <li>
                 <a
                   href="/manage-books"
@@ -130,8 +132,8 @@ export default function Header({ userDetails }) {
               </li>
             )}
             <li>
-              {userDetails?.name ? (
-                userDetails.role === "admin" ? (
+              {props.userDetails?.name ? (
+                props.userDetails?.role === "admin" ? (
                   <a
                     href="/admin/dashboard"
                     className="block hover:text-indigo-600 transition duration-300"
