@@ -25,16 +25,16 @@ export default function Home() {
     <div className="min-h-screen">
       <Header userDetails={userDetails} />
 
-      <section className="text-center py-24 px-10">
-        <h1 className="text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
+      <section className="text-center py-12 px-4 md:py-24 md:px-12">
+        <h1 className="text-4xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
           Revolutionaize Your Library Experience
         </h1>
-        <p className="text-2xl mb-6">
+        <p className="text-center text-xl mb-6">
           Browse, Wishlist, and Borrow Books Seamlessly
         </p>
       </section>
 
-      <section id="discover" className="py-24 px-12">
+      <section id="discover" className="py-12 px-4 md:py-24 md:px-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12">
           <div className="bg-indigo-50 rounded-lg overflow-hidden p-8 text-center duration-300">
             <div className="text-indigo-600 text-5xl mb-6">📚</div>
