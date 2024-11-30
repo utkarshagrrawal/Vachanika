@@ -2,9 +2,11 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import StarIcon from "../components/icons/starIcon";
+import Header from "../layouts/header";
 
 export default function Book() {
   const { isbn } = useParams();
+  const [userDetails, setUserDetails] = useState({});
   const [book, setBook] = useState({});
   const [processing, setProcessing] = useState(false);
   const [response, setResponse] = useState("");
@@ -14,8 +16,8 @@ export default function Book() {
       .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
         withCredentials: true,
       })
-      .then(() => {
-        // Do nothing
+      .then((res) => {
+        setUserDetails(res.data);
       })
       .catch((err) => {
         window.location.href =
@@ -70,7 +72,8 @@ export default function Book() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-3xl container mx-auto py-8 space-y-6">
+      <Header userDetails={userDetails} className={`bg-gray-50`} />
+      <div className="w-full px-6 lg:px-12 py-8 space-y-6">
         {response && (
           <div
             className={`w-full border rounded-lg p-2 text-sm font-semibold text-center ${

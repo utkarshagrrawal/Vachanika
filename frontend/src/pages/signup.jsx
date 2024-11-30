@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import Logo from "../assets/logo.jpg";
+import Logo from "../assets/logo.png";
 import ShieldCheckIcon from "../components/icons/shieldCheckIcon";
 import ShieldWarningIcon from "../components/icons/shieldWarningIcon";
 
