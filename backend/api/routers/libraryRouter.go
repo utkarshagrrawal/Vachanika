@@ -20,6 +20,11 @@ func LibraryRouter() *mux.Router {
 	router.Handle("/past-borrows", middlewares.VerifyToken(http.HandlerFunc(handlers.GetBorrowHistory))).Methods("GET", "OPTIONS")
 	router.Handle("/extend-due-date", middlewares.VerifyToken(http.HandlerFunc(handlers.ExtendBookReturnDate))).Methods("POST", "OPTIONS")
 	router.Handle("/lost-book", middlewares.VerifyToken(http.HandlerFunc(handlers.ReportBookLost))).Methods("POST", "OPTIONS")
+	router.Handle("/add-to-wishlist", middlewares.VerifyToken(http.HandlerFunc(handlers.AddBookToWishlist))).Methods("POST", "OPTIONS")
+	router.Handle("/reviews/{isbn}", middlewares.VerifyToken(http.HandlerFunc(handlers.GetBookReviews))).Methods("GET", "OPTIONS")
+	router.Handle("/wishlist", middlewares.VerifyToken(http.HandlerFunc(handlers.GetUserWishlist))).Methods("GET", "OPTIONS")
+	router.Handle("/remove-from-wishlist", middlewares.VerifyToken(http.HandlerFunc(handlers.RemoveBookFromWishlist))).Methods("POST", "OPTIONS")
+	router.Handle("/activity", middlewares.VerifyToken(http.HandlerFunc(handlers.GetRecentLibraryActivity))).Methods("GET", "OPTIONS")
 
 	return router
 }

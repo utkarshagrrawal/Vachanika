@@ -12,6 +12,7 @@ import Book from "./pages/book";
 import Signout from "./pages/signout";
 import BorrowHistory from "./pages/borrowHistory";
 import AdminProfile from "./pages/adminProfile";
+import Wishlist from "./pages/wishlist";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
           path="/manage-books"
           element={<Navigate to="/manage-books/search" />}
         />
+        <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/admin/dashboard" element={<AdminProfile />} />
         <Route path="/book/:isbn" element={<Book />} />
         <Route path="/manage-books/:section" element={<ManageBooks />} />

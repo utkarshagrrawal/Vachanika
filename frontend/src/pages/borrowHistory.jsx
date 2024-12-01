@@ -2,6 +2,14 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import StarIcon from "../components/icons/starIcon";
 
+function debounce(fn, delay) {
+  let timer;
+  return function (...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
 export default function BorrowHistory() {
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
@@ -10,7 +18,6 @@ export default function BorrowHistory() {
   const [borrowedBooks, setBorrowedBooks] = useState([]);
   const [pastBorrows, setPastBorrows] = useState([]);
   const [page, setPage] = useState(1);
-  const scrollValue = useRef(0);
   const [response, setResponse] = useState({
     message: "",
     type: "",
@@ -25,14 +32,17 @@ export default function BorrowHistory() {
   const [reviewPrompt, setReviewPrompt] = useState(false);
 
   useEffect(() => {
-    const scrollListener = () => {
-      if (window.scrollY - scrollValue.current > 100) {
+    const handleScroll = () => {
+      if (
+        window.scrollY + window.innerHeight >=
+        document.documentElement.scrollHeight
+      ) {
         setPage(page + 1);
-        scrollValue.current = window.scrollY;
       }
     };
-    window.addEventListener("scroll", scrollListener);
-    return () => window.removeEventListener("scroll", scrollListener);
+    const debouncedHandleScroll = debounce(handleScroll, 500);
+    window.addEventListener("scroll", debouncedHandleScroll);
+    return () => window.removeEventListener("scroll", debouncedHandleScroll);
   }, [selectedSection]);
 
   useEffect(() => {

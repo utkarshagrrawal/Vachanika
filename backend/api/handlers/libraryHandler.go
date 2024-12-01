@@ -230,3 +230,140 @@ func ReportBookLost(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(reportBookLostResponse)
 }
+
+func AddBookToWishlist(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var addBookToWishlistDetails models.BookManagementRequest
+	if err := json.NewDecoder(r.Body).Decode(&addBookToWishlistDetails); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Error getting the book details")
+		return
+	}
+	if addBookToWishlistDetails.ISBN == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("ISBN cannot be empty")
+		return
+	}
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user details")
+		return
+	}
+	addBookToWishlistDetails.Email = email
+	addBookToWishlistResponse := services.AddBookToWishlistService(&addBookToWishlistDetails)
+	if addBookToWishlistResponse != "Book added to wishlist successfully" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(addBookToWishlistResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(addBookToWishlistResponse)
+}
+
+func GetBookReviews(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	routeParams := mux.Vars(r)
+	isbn := routeParams["isbn"]
+	if isbn == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("ISBN cannot be empty")
+		return
+	}
+	queryParams := r.URL.Query()
+	page := queryParams.Get("page")
+	if page == "" {
+		page = "1"
+	}
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Invalid page number")
+		return
+	}
+	reviews, reviewsResponse := services.GetBookReviewsService(isbn, pageNumber)
+	if reviewsResponse != "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(reviewsResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(reviews)
+}
+
+func GetUserWishlist(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user details")
+		return
+	}
+	values := r.URL.Query()
+	page := values.Get("page")
+	if page == "" {
+		page = "1"
+	}
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Invalid page number")
+		return
+	}
+	wishlist, wishlistResponse := services.GetUserWishlistService(email, pageNumber)
+	if wishlistResponse != "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(wishlistResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(wishlist)
+}
+
+func RemoveBookFromWishlist(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var removeBookFromWishlistDetails models.BookManagementRequest
+	if err := json.NewDecoder(r.Body).Decode(&removeBookFromWishlistDetails); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Error getting the book details")
+		return
+	}
+	if removeBookFromWishlistDetails.ISBN == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("ISBN cannot be empty")
+		return
+	}
+	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user details")
+		return
+	}
+	removeBookFromWishlistDetails.Email = email
+	removeBookFromWishlistResponse := services.RemoveBookFromWishlistService(&removeBookFromWishlistDetails)
+	if removeBookFromWishlistResponse != "Book removed from wishlist successfully" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(removeBookFromWishlistResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(removeBookFromWishlistResponse)
+}
+
+func GetRecentLibraryActivity(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	queryParams := r.URL.Query()
+	page := queryParams.Get("page")
+	if page == "" {
+		page = "1"
+	}
+	pageNumber, err := strconv.Atoi(page)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode("Invalid page number")
+		return
+	}
+	activity, activityResponse := services.GetRecentLibraryActivityService(pageNumber)
+	if activityResponse != "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(activityResponse)
+		return
+	}
+	json.NewEncoder(w).Encode(activity)
+}

@@ -3,6 +3,10 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 
 export default function ManageBooks() {
+  const dateFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+  });
+
   const { section } = useParams();
   const [user, setUser] = useState({});
   const [genreOptions, setGenreOptions] = useState([
@@ -54,6 +58,7 @@ export default function ManageBooks() {
     quantity: 0,
   });
   const [addingBook, setAddingBook] = useState(false);
+  const [activity, setActivity] = useState([]);
 
   useEffect(() => {
     const genreDropdownListener = (e) => {
@@ -103,6 +108,8 @@ export default function ManageBooks() {
           checkedOutThisMonth: res.data.booksCheckedOutThisMonth,
           overdue: res.data.totalOverdue,
           overdueThisMonth: res.data.booksOverdueThisMonth,
+          lost: res.data.totalLost,
+          lostThisMonth: res.data.booksLostThisMonth,
         });
       })
       .catch((err) => {
@@ -135,6 +142,19 @@ export default function ManageBooks() {
       fetchBooks();
     }
   }, [currentSection, searchPage, searchText]);
+
+  useEffect(() => {
+    axios
+      .get(import.meta.env.VITE_API_URL + "/api/v1/library/activity?page=1", {
+        withCredentials: true,
+      })
+      .then((res) => {
+        setActivity(res.data || []);
+      })
+      .catch((err) => {
+        setActivity([]);
+      });
+  }, []);
 
   const handleNewBookDetails = (e) => {
     setNewBook({
@@ -199,14 +219,14 @@ export default function ManageBooks() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 px-4">
         <h1 className="text-4xl font-bold text-left text-gray-800">
           Welcome, Librarian
         </h1>
         <p className="mt-4 text-xl text-left text-gray-600">
           Manage the library with ease
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
           <div className="bg-white border border-gray-300 p-6 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">Total Books</span>
@@ -240,6 +260,18 @@ export default function ManageBooks() {
               <span className="text-lg font-bold">{statistics.overdue}</span>
               <span className="text-gray-600 text-xs">
                 +{statistics.overdueThisMonth} this month
+              </span>
+            </div>
+          </div>
+          <div className="bg-white border border-gray-300 p-6 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold">Lost</span>
+              <span className="text-gray-500 text-sm">#</span>
+            </div>
+            <div className="mt-4 flex flex-col justify-center">
+              <span className="text-lg font-bold">{statistics.lost}</span>
+              <span className="text-gray-600 text-xs">
+                +{statistics.lostThisMonth} this month
               </span>
             </div>
           </div>
@@ -438,34 +470,35 @@ export default function ManageBooks() {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-          <div className="bg-white p-6 border border-gray-300 rounded-lg">
-            <h1 className="text-lg text-gray-800 font-semibold">
-              Recent Activities
-            </h1>
-            <div className="flex flex-col gap-2 mt-4">
-              <span className="text-sm text-gray-800">
-                Joe just checked out "Hi"
-              </span>
-              <span className="text-sm text-gray-800">
-                Jane returned "Hello"
-              </span>
-              <span className="text-sm text-gray-800">John added "Hola"</span>
-            </div>
-          </div>
-          <div className="bg-white p-6 border border-gray-300 rounded-lg">
-            <h1 className="text-lg text-gray-800 font-semibold">
-              Quick Actions
-            </h1>
-            <div className="flex flex-col gap-2 mt-4">
-              <span
-                className="text-sm text-gray-800 hover:underline"
-                onClick={() => setCurrentSection("add-book")}
-              >
-                Add a book
-              </span>
-              <span className="text-sm text-gray-800">Search for a book</span>
-            </div>
+        <div className="bg-white p-6 border border-gray-300 rounded-lg mt-8">
+          <h1 className="text-lg text-gray-800 font-semibold hover:underline hover:text-blue-500 duration-150 hover:cursor-pointer">
+            Recent Activities
+          </h1>
+          <div className="flex flex-col gap-4 mt-4 max-h-48 overflow-auto">
+            {activity.length > 0 ? (
+              activity.map((act, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-800 font-medium">
+                      {act.email}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {act.activity}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 md:text-right">
+                    {dateFormatter.format(new Date(act.activityOn))}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-600">
+                <p className="text-sm">No activities found</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

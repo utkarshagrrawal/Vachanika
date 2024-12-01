@@ -25,7 +25,7 @@ export default function Header(props) {
           Browse Books
         </a>
         <a
-          href="#wishlist"
+          href="/wishlist"
           className="hover:text-indigo-600 transition duration-300"
         >
           My Wishlist
@@ -107,7 +107,7 @@ export default function Header(props) {
             </li>
             <li>
               <a
-                href="#wishlist"
+                href="/wishlist"
                 className="block hover:text-indigo-600 transition duration-300"
               >
                 My Wishlist
