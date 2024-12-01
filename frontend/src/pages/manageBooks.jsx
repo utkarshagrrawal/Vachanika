@@ -2,14 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 
+function debounce(func, delay) {
+  let timeout;
+  return function (...args) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+}
+
 export default function ManageBooks() {
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   });
 
-  const { section } = useParams();
-  const [user, setUser] = useState({});
-  const [genreOptions, setGenreOptions] = useState([
+  const genreOptions = [
     "Fiction",
     "Non-Fiction",
     "Fantasy",
@@ -35,19 +43,17 @@ export default function ManageBooks() {
     "Manga",
     "Graphic Novels",
     "Others",
-  ]);
+  ];
+
+  const { section } = useParams();
   const [filteredGenres, setFilteredGenres] = useState(genreOptions);
   const genresRef = useRef(null);
   const [genresVisible, setGenresVisible] = useState(false);
   const [currentSection, setCurrentSection] = useState(section || "search");
   const [searchResponse, setSearchResponse] = useState("");
   const [searchPage, setSearchPage] = useState(1);
-  const [statistics, setStatistics] = useState({
-    totalBooks: 0,
-    booksAddedThisMonth: 0,
-    checkedOut: 0,
-    overdue: 0,
-  });
+  const scrollRef = useRef(0);
+  const [statistics, setStatistics] = useState({});
   const [books, setBooks] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [addBookResponse, setAddBookResponse] = useState("");
@@ -59,6 +65,22 @@ export default function ManageBooks() {
   });
   const [addingBook, setAddingBook] = useState(false);
   const [activity, setActivity] = useState([]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.scrollY > scrollRef.current &&
+        window.innerHeight + window.scrollY !==
+          document.documentElement.offsetHeight
+      ) {
+        scrollRef.current = window.scrollY;
+        setSearchPage((prev) => prev + 1);
+      }
+    };
+    const debouncedScroll = debounce(handleScroll, 100);
+    window.addEventListener("scroll", debouncedScroll);
+    return () => window.removeEventListener("scroll", debouncedScroll);
+  }, []);
 
   useEffect(() => {
     const genreDropdownListener = (e) => {
@@ -84,14 +106,15 @@ export default function ManageBooks() {
         withCredentials: true,
       })
       .then((res) => {
-        if (res.data.role !== "librarian") {
+        if (res.data?.role !== "librarian") {
           window.location.href = "/";
         }
-        setUser(res.data);
       })
       .catch((err) => {
-        window.location.href =
-          "/signin?next=" + encodeURIComponent("/manage-books");
+        if (err.code !== "ECONNABORTED") {
+          window.location.href =
+            "/signin?next=" + encodeURIComponent("/manage-books");
+        }
       });
   }, []);
 
@@ -131,7 +154,8 @@ export default function ManageBooks() {
           }
         )
         .then((res) => {
-          setBooks(res.data);
+          if (searchPage === 1) setBooks(res.data || []);
+          else setBooks((prev) => [...prev, ...(res.data || [])]);
         })
         .catch((err) => {
           setSearchResponse(err.response?.data || "An error occurred");
@@ -139,7 +163,7 @@ export default function ManageBooks() {
     };
     if (currentSection === "search") {
       setSearchResponse("");
-      fetchBooks();
+      fetchBooks;
     }
   }, [currentSection, searchPage, searchText]);
 
@@ -233,9 +257,11 @@ export default function ManageBooks() {
               <span className="text-gray-500 text-sm">#</span>
             </div>
             <div className="mt-4 flex flex-col justify-center">
-              <span className="text-lg font-bold">{statistics.totalBooks}</span>
+              <span className="text-lg font-bold">
+                {statistics.totalBooks || 0}
+              </span>
               <span className="text-gray-600 text-xs">
-                +{statistics.booksAddedThisMonth} this month
+                +{statistics.booksAddedThisMonth || 0} this month
               </span>
             </div>
           </div>
@@ -245,9 +271,11 @@ export default function ManageBooks() {
               <span className="text-gray-500 text-sm">#</span>
             </div>
             <div className="mt-4 flex flex-col justify-center">
-              <span className="text-lg font-bold">{statistics.checkedOut}</span>
+              <span className="text-lg font-bold">
+                {statistics.checkedOut || 0}
+              </span>
               <span className="text-gray-600 text-xs">
-                +{statistics.checkedOutThisMonth} this month
+                +{statistics.checkedOutThisMonth || 0} this month
               </span>
             </div>
           </div>
@@ -257,9 +285,11 @@ export default function ManageBooks() {
               <span className="text-gray-500 text-sm">/</span>
             </div>
             <div className="mt-4 flex flex-col justify-center">
-              <span className="text-lg font-bold">{statistics.overdue}</span>
+              <span className="text-lg font-bold">
+                {statistics.overdue || 0}
+              </span>
               <span className="text-gray-600 text-xs">
-                +{statistics.overdueThisMonth} this month
+                +{statistics.overdueThisMonth || 0} this month
               </span>
             </div>
           </div>
@@ -269,9 +299,9 @@ export default function ManageBooks() {
               <span className="text-gray-500 text-sm">#</span>
             </div>
             <div className="mt-4 flex flex-col justify-center">
-              <span className="text-lg font-bold">{statistics.lost}</span>
+              <span className="text-lg font-bold">{statistics.lost || 0}</span>
               <span className="text-gray-600 text-xs">
-                +{statistics.lostThisMonth} this month
+                +{statistics.lostThisMonth || 0} this month
               </span>
             </div>
           </div>

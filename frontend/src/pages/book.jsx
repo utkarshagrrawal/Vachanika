@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import StarIcon from "../components/icons/starIcon";
 import Header from "../layouts/header";
@@ -20,14 +20,18 @@ export default function Book() {
   const [reviewsPage, setReviewsPage] = useState(1);
   const [processing, setProcessing] = useState(false);
   const [response, setResponse] = useState("");
+  const scrollRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       if (
+        window.scrollY > scrollRef.current &&
         window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight
-      )
-        setReviewsPage(reviewsPage + 1);
+          document.documentElement.scrollHeight
+      ) {
+        scrollRef.current = window.scrollY;
+        setReviewsPage((prev) => prev + 1);
+      }
     };
     const debouncedHandleScroll = debounce(handleScroll, 500);
     window.addEventListener("scroll", debouncedHandleScroll);
@@ -43,8 +47,10 @@ export default function Book() {
         setUserDetails(res.data);
       })
       .catch((err) => {
-        window.location.href =
-          "/signin?next=" + encodeURIComponent("/book/" + isbn);
+        if (err.code !== "ECONNABORTED") {
+          window.location.href =
+            "/signin?next=" + encodeURIComponent("/book/" + isbn);
+        }
       });
   }, []);
 

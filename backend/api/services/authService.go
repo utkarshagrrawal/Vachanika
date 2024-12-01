@@ -41,9 +41,9 @@ func LoginUserService(u *models.UserLogin) (string, error) {
 	if err != nil {
 		return "Error finding the user table in the Database", err
 	}
-	result := database.DatabaseConnection.DB.QueryRow("SELECT PASSWORD FROM USERS WHERE EMAIL = ?", u.Email)
-	var password string
-	if err := result.Scan(&password); err == sql.ErrNoRows {
+	result := database.DatabaseConnection.DB.QueryRow("SELECT PASSWORD, ROLE FROM USERS WHERE EMAIL = ?", u.Email)
+	var password, role string
+	if err := result.Scan(&password, &role); err == sql.ErrNoRows {
 		return "User not found", err
 	} else if err != nil {
 		return "Error getting the user details", err
@@ -60,6 +60,7 @@ func LoginUserService(u *models.UserLogin) (string, error) {
 	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": u.Email,
+		"role":  role,
 		"exp":   expiryTime,
 	}).SignedString([]byte(os.Getenv("APP_SECRET")))
 	if err != nil {

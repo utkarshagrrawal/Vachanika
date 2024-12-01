@@ -12,6 +12,17 @@ import (
 
 func AddBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	role, ok := r.Context().Value(models.SessionInfo("role")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user role")
+		return
+	}
+	if role != "librarian" {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode("You are not authorized to add books")
+		return
+	}
 	var requestedBookDetails models.AddBookRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestedBookDetails); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -61,6 +72,17 @@ func GetBooks(w http.ResponseWriter, r *http.Request) {
 
 func GetLibrarySummary(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	role, ok := r.Context().Value(models.SessionInfo("role")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user role")
+		return
+	}
+	if role != "librarian" {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode("You are not authorized to view the library summary")
+		return
+	}
 	librarySummary, librarySummaryResponse := services.GetLibrarySummaryService()
 	if librarySummaryResponse != "" {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,7 +123,7 @@ func CheckoutBook(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("ISBN cannot be empty")
 		return
 	}
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -129,7 +151,7 @@ func ReturnBook(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("ISBN cannot be empty")
 		return
 	}
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -147,7 +169,7 @@ func ReturnBook(w http.ResponseWriter, r *http.Request) {
 
 func GetBorrowHistory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -186,7 +208,7 @@ func ExtendBookReturnDate(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("ISBN cannot be empty")
 		return
 	}
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -215,7 +237,7 @@ func ReportBookLost(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("ISBN cannot be empty")
 		return
 	}
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -244,7 +266,7 @@ func AddBookToWishlist(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("ISBN cannot be empty")
 		return
 	}
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -291,7 +313,7 @@ func GetBookReviews(w http.ResponseWriter, r *http.Request) {
 
 func GetUserWishlist(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -330,7 +352,7 @@ func RemoveBookFromWishlist(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("ISBN cannot be empty")
 		return
 	}
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode("Error getting the user details")
@@ -348,6 +370,17 @@ func RemoveBookFromWishlist(w http.ResponseWriter, r *http.Request) {
 
 func GetRecentLibraryActivity(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	role, ok := r.Context().Value(models.SessionInfo("role")).(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode("Error getting the user role")
+		return
+	}
+	if role != "librarian" {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode("You are not authorized to view the library activity")
+		return
+	}
 	queryParams := r.URL.Query()
 	page := queryParams.Get("page")
 	if page == "" {

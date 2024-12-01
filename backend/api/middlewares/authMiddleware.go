@@ -34,7 +34,8 @@ func VerifyToken(next http.Handler) http.Handler {
 				return
 			}
 		}
-		ctx := context.WithValue(r.Context(), models.UserToken("token"), jwtClaims["email"])
+		ctx := context.WithValue(r.Context(), models.SessionInfo("email"), jwtClaims["email"])
+		ctx = context.WithValue(ctx, models.SessionInfo("role"), jwtClaims["role"])
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
