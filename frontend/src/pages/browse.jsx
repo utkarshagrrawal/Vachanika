@@ -1,7 +1,15 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BookIcon from "../components/icons/bookIcon";
 import StarIcon from "../components/icons/starIcon";
+
+function debounce(fn, delay) {
+  let timer;
+  return function (...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
 
 export default function BrowseBooks() {
   const [filters, setFilters] = useState({
@@ -10,8 +18,25 @@ export default function BrowseBooks() {
     minRating: 0,
   });
   const [error, setError] = useState("");
+  const scrollRef = useRef(0);
   const [page, setPage] = useState(1);
   const [books, setBooks] = useState([]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.scrollY > scrollRef.current &&
+        window.innerHeight + window.scrollY >=
+          document.documentElement.scrollHeight
+      ) {
+        scrollRef.current = window.scrollY;
+        setPage((prev) => prev + 1);
+      }
+    };
+    const debouncedHandleScroll = debounce(handleScroll, 500);
+    window.addEventListener("scroll", debouncedHandleScroll);
+    return () => window.removeEventListener("scroll", debouncedHandleScroll);
+  }, []);
 
   useEffect(() => {
     axios
@@ -20,7 +45,10 @@ export default function BrowseBooks() {
       })
       .then((res) => {})
       .catch((err) => {
-        window.location.href = "/signin?next=" + encodeURIComponent("/browse");
+        if (err.code !== "ECONNABORTED") {
+          window.location.href =
+            "/signin?next=" + encodeURIComponent("/browse");
+        }
       });
   }, []);
 
@@ -33,7 +61,8 @@ export default function BrowseBooks() {
         }
       )
       .then((res) => {
-        setBooks(res.data);
+        if (page === 1) setBooks(res.data || []);
+        else setBooks((prev) => [...prev, ...(res.data || [])]);
       })
       .catch((err) => {
         setError(

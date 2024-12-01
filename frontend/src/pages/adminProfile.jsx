@@ -23,8 +23,10 @@ export default function AdminProfile() {
         setUser(res.data);
       })
       .catch((err) => {
-        window.location.href =
-          "/signin?next=" + encodeURIComponent("/admin/dashboard");
+        if (err.code !== "ECONNABORTED") {
+          window.location.href =
+            "/signin?next=" + encodeURIComponent("/admin/dashboard");
+        }
       });
   }, []);
 

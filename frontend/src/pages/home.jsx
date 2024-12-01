@@ -12,7 +12,7 @@ export default function Home() {
         withCredentials: true,
       })
       .then((res) => {
-        setUserDetails(res.data);
+        setUserDetails(res.data || {});
       })
       .catch((err) => {
         console.error(

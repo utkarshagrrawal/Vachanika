@@ -30,20 +30,23 @@ export default function BorrowHistory() {
     rating: "",
   });
   const [reviewPrompt, setReviewPrompt] = useState(false);
+  const scrollRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       if (
+        window.scrollY > scrollRef.current &&
         window.scrollY + window.innerHeight >=
-        document.documentElement.scrollHeight
+          document.documentElement.scrollHeight
       ) {
+        scrollRef.current = window.scrollY;
         setPage(page + 1);
       }
     };
     const debouncedHandleScroll = debounce(handleScroll, 500);
     window.addEventListener("scroll", debouncedHandleScroll);
     return () => window.removeEventListener("scroll", debouncedHandleScroll);
-  }, [selectedSection]);
+  }, []);
 
   useEffect(() => {
     axios
@@ -54,8 +57,10 @@ export default function BorrowHistory() {
         setSelectedSection("current");
       })
       .catch((err) => {
-        window.location.href =
-          "/signin?next=" + encodeURIComponent(window.location.pathname);
+        if (err.code !== "ECONNABORTED") {
+          window.location.href =
+            "/signin?next=" + encodeURIComponent(window.location.pathname);
+        }
       });
   }, []);
 

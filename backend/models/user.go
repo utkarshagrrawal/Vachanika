@@ -41,7 +41,7 @@ type DeletionConfirmationEntry struct {
 	ExpireAt   int
 }
 
-type UserToken string
+type SessionInfo string
 
 type UserRoleUpdate struct {
 	Email string `json:"email"`

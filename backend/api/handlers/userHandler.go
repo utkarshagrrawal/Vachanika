@@ -12,7 +12,7 @@ import (
 
 func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode("Error getting the user session")
@@ -29,7 +29,7 @@ func GetUserDetails(w http.ResponseWriter, r *http.Request) {
 
 func UpdateUserDetails(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode("Error getting the user session")
@@ -68,7 +68,7 @@ func UpdateUserDetails(w http.ResponseWriter, r *http.Request) {
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode("Error retrieving user session info")
@@ -97,7 +97,7 @@ func VerifyDeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 func GetCheckedOutBooks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode("Error getting the user session")

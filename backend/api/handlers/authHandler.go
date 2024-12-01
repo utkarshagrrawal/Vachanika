@@ -63,7 +63,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	email, ok := r.Context().Value(models.UserToken("token")).(string)
+	email, ok := r.Context().Value(models.SessionInfo("email")).(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode("Error retrieving the user session")

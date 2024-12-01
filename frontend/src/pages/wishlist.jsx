@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import HeartIcon from "../components/icons/heartIcon";
 import axios from "axios";
 
@@ -18,14 +18,18 @@ export default function Wishlist() {
   });
   const [wishlistPage, setWishlistPage] = useState(1);
   const [processing, setProcessing] = useState(false);
+  const scrollRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       if (
+        window.scrollY > scrollRef.current &&
         window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight
-      )
+          document.documentElement.scrollHeight
+      ) {
+        scrollRef.current = window.scrollY;
         setWishlistPage((prev) => prev + 1);
+      }
     };
     const debouncedHandleScroll = debounce(handleScroll, 500);
     window.addEventListener("scroll", debouncedHandleScroll);
