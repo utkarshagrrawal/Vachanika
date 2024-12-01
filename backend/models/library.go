@@ -15,6 +15,8 @@ type LibrarySummary struct {
 	BooksCheckedOutThisMonth int `json:"booksCheckedOutThisMonth"`
 	TotalOverdue             int `json:"totalOverdue"`
 	BooksOverdueThisMonth    int `json:"booksOverdueThisMonth"`
+	TotalLost                int `json:"totalLost"`
+	BooksLostThisMonth       int `json:"booksLostThisMonth"`
 }
 
 type Books struct {
@@ -59,4 +61,22 @@ type BookManagementRequest struct {
 	Email  string `json:"email"`
 	Review string `json:"review"`
 	Rating int    `json:"rating"`
+}
+
+type BookReviews struct {
+	Review string `json:"review"`
+	Rating int    `json:"rating"`
+}
+
+type UserWishlist struct {
+	ISBN     string `json:"isbn"`
+	Title    string `json:"title"`
+	Author   string `json:"author"`
+	Quantity int    `json:"quantity"`
+}
+
+type LibraryActivity struct {
+	Email      string    `json:"email"`
+	Activity   string    `json:"activity"`
+	ActivityOn time.Time `json:"activityOn"`
 }
