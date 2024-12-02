@@ -39,9 +39,7 @@ export default function AdminProfile() {
         .then((res) => {
           setUsers(res.data || []);
         })
-        .catch((err) => {
-          console.log(err);
-        });
+        .catch((err) => {});
     };
     if (user.role === "admin") {
       fetchUsers();
