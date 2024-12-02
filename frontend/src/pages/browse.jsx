@@ -12,10 +12,38 @@ function debounce(fn, delay) {
 }
 
 export default function BrowseBooks() {
+  const genreOptions = [
+    "Fiction",
+    "Non-Fiction",
+    "Fantasy",
+    "Science Fiction",
+    "Mystery",
+    "Thriller",
+    "Romance",
+    "Horror",
+    "Biography",
+    "Autobiography",
+    "History",
+    "Science",
+    "Self-help",
+    "Cookbooks",
+    "Travel",
+    "Art",
+    "Poetry",
+    "Religion",
+    "Philosophy",
+    "Children",
+    "Young Adult",
+    "Comics",
+    "Manga",
+    "Graphic Novels",
+    "Others",
+  ];
+
   const [filters, setFilters] = useState({
     search: "",
     genre: "",
-    minRating: 0,
+    rating: 0,
   });
   const [error, setError] = useState("");
   const scrollRef = useRef(0);
@@ -53,9 +81,16 @@ export default function BrowseBooks() {
   }, []);
 
   useEffect(() => {
+    if (filters.search !== "" || filters.genre !== "" || filters.rating !== 0) {
+      setPage(1);
+    }
     axios
       .get(
-        import.meta.env.VITE_API_URL + "/api/v1/library/books?page=" + page,
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/v1/library/books?page=${page}&search=${filters.search}&genre=${
+          filters.genre
+        }&rating=${filters.rating === 0 ? "" : filters.rating.toString()}`,
         {
           withCredentials: true,
         }
@@ -69,7 +104,7 @@ export default function BrowseBooks() {
           err.response?.data || "An error occurred while fetching books"
         );
       });
-  }, [page]);
+  }, [page, filters]);
 
   const handleFiltersChange = (e) => {
     setFilters({
@@ -96,7 +131,7 @@ export default function BrowseBooks() {
           {error}
         </div>
 
-        <div className="flex flex-wrap md:flex-nowrap justify-center md:justify-between items-center gap-4 w-full">
+        <div className="flex flex-wrap gap-4 items-center justify-center md:justify-between w-full p-4 bg-gray-50 border border-gray-200 rounded-lg shadow-md">
           <div className="flex-grow">
             <input
               type="text"
@@ -104,8 +139,8 @@ export default function BrowseBooks() {
               autoFocus
               value={filters.search}
               onChange={handleFiltersChange}
-              placeholder="Search for a book..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400 transition duration-200"
+              placeholder="Search books..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm placeholder-gray-500 transition duration-200"
             />
           </div>
 
@@ -114,35 +149,36 @@ export default function BrowseBooks() {
               id="genre"
               value={filters.genre}
               onChange={handleFiltersChange}
-              className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition duration-200"
+              className="w-full md:w-52 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm transition duration-200"
             >
               <option value="">All Genres</option>
-              <option value="fiction">Fiction</option>
-              <option value="non-fiction">Non-Fiction</option>
-              <option value="mystery">Mystery</option>
-              <option value="thriller">Thriller</option>
-              <option value="fantasy">Fantasy</option>
-              <option value="romance">Romance</option>
+              {genreOptions.map((genre, index) => (
+                <option key={index} value={genre}>
+                  {genre}
+                </option>
+              ))}
             </select>
           </div>
 
-          <div className="flex justify-between items-center gap-2 min-w-72">
-            <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
-              Min Rating:
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700">
+              Min rating:
             </label>
-            <input
-              type="range"
-              id="minRating"
-              value={filters.minRating}
-              onChange={handleFiltersChange}
-              min="0"
-              max="5"
-              step="0.5"
-              className="w-28 md:w-40 h-2 bg-gray-200 rounded-lg cursor-pointer accent-indigo-500"
-            />
-            <span className="text-sm font-semibold text-gray-700">
-              {filters.minRating}
-            </span>
+            {[...Array(5)].map((_, index) => (
+              <button
+                key={index}
+                onClick={() =>
+                  setFilters((prev) => ({ ...prev, rating: index + 1 }))
+                }
+              >
+                <StarIcon
+                  className={`h-6 w-6 cursor-pointer transition-colors duration-150 ${
+                    index < filters.rating ? "text-yellow-500" : "text-gray-300"
+                  }`}
+                  fill={"currentColor"}
+                />
+              </button>
+            ))}
           </div>
         </div>
 
