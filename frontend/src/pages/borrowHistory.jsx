@@ -198,7 +198,7 @@ export default function BorrowHistory() {
 
     axios
       .post(
-        import.meta.env.VITE_API_URL + "/api/v1/library/report-lost",
+        import.meta.env.VITE_API_URL + "/api/v1/library/lost-book",
         {
           isbn: book.isbn,
         },
@@ -207,11 +207,7 @@ export default function BorrowHistory() {
         }
       )
       .then((res) => {
-        setBorrowedBooks(
-          borrowedBooks.map((b) =>
-            b.isbn === book.isbn ? { ...b, lost: true } : b
-          )
-        );
+        setBorrowedBooks(borrowedBooks.map((b) => b.isbn !== book.isbn));
         setPastBorrows([...pastBorrows, { ...book, lost: true }]);
         setResponse({
           message: res.data,
