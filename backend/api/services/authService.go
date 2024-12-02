@@ -2,7 +2,6 @@ package services
 
 import (
 	"database/sql"
-	"fmt"
 	"library/database"
 	"library/models"
 	"os"
@@ -30,7 +29,6 @@ func CreateUserService(u *models.NewUser) string {
 	}
 	_, err = database.DatabaseConnection.DB.Exec("INSERT INTO USERS (NAME, EMAIL, PASSWORD, GENDER, PHONE, ROLE, DOB) VALUES (?, ?, ?, ?, ?, ?, ?)", u.Name, u.Email, string(hashedBytes), u.Gender, u.Phone, u.Role, u.DOB)
 	if err != nil {
-		fmt.Println(err)
 		return "Error creating the user"
 	}
 	return "User created successfully"

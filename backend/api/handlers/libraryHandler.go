@@ -61,7 +61,7 @@ func GetBooks(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Invalid page number")
 		return
 	}
-	books, booksResponse := services.GetBooksService(pageNumber, values.Get("search"))
+	books, booksResponse := services.GetBooksService(values.Get("search"), values.Get("genre"), values.Get("rating"), pageNumber)
 	if booksResponse != "" {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(booksResponse)

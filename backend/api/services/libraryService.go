@@ -8,6 +8,7 @@ import (
 	"library/models"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -69,9 +70,9 @@ func AddBookService(b *models.AddBookRequest) string {
 	return "Book added successfully"
 }
 
-func GetBooksService(page int, searchText string) ([]models.Books, string) {
+func GetBooksService(searchText, genre, rating string, page int) ([]models.Books, string) {
 	var books []models.Books
-	var query string
+	var query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, '', COALESCE(SUM(br.RATING) / COUNT(br.BOOK_ISBN), 0) FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN LEFT JOIN BOOK_REVIEWS br ON br.BOOK_ISBN = b.ISBN"
 	skip := (page - 1) * 20
 	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOKS (ISBN NVARCHAR(15) PRIMARY KEY, TITLE NVARCHAR(200), AUTHOR NVARCHAR(250), PUBLISHER NVARCHAR(250), QUANTITY INT, CREATED_AT DATE, CHECKED_OUT INT, OVERDUE INT, LOST INT)"); err != nil {
 		return books, "An error occurred while accessing the books table."
@@ -82,11 +83,21 @@ func GetBooksService(page int, searchText string) ([]models.Books, string) {
 	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOK_REVIEWS (REVIEW_ID INT PRIMARY KEY AUTO_INCREMENT, BOOK_ISBN NVARCHAR(15), USER_EMAIL NVARCHAR(250), REVIEW NVARCHAR(500), RATING INT)"); err != nil {
 		return books, "An error occurred while accessing the book reviews table."
 	}
-	if searchText == "" {
-		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', '), COALESCE(SUM(br.RATING) / COUNT(br.BOOK_ISBN), 0) FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN LEFT JOIN BOOK_REVIEWS br ON br.BOOK_ISBN = b.ISBN GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
-	} else {
-		query = "SELECT b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY, GROUP_CONCAT(bg.GENRE SEPARATOR ', '), COALESCE(SUM(br.RATING) / COUNT(br.BOOK_ISBN), 0) FROM BOOKS b LEFT JOIN BOOK_GENRES bg ON b.ISBN = bg.BOOK_ISBN LEFT JOIN BOOK_REVIEWS br ON br.BOOK_ISBN = b.ISBN WHERE b.TITLE LIKE '%" + searchText + "%' GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
+	if searchText != "" || genre != "" {
+		query += " WHERE "
 	}
+	if searchText != "" {
+		query += "b.TITLE LIKE '%" + searchText + "%' AND "
+	}
+	if genre != "" {
+		query += "bg.GENRE = '" + genre + "' AND "
+	}
+	query, _ = strings.CutSuffix(query, " AND ")
+	query += " GROUP BY b.ISBN, b.TITLE, b.AUTHOR, b.PUBLISHER, b.QUANTITY "
+	if rating != "" {
+		query += "HAVING SUM(br.RATING) / COUNT(br.BOOK_ISBN) >= " + rating + " "
+	}
+	query += "ORDER BY b.ISBN LIMIT " + strconv.Itoa(20) + " OFFSET " + strconv.Itoa(skip)
 	rows, err := database.DatabaseConnection.DB.Query(query)
 	if err != nil {
 		return books, "An error occurred while accessing the database."
