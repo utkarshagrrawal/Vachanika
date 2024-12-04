@@ -40,6 +40,20 @@ export default function Wishlist() {
 
   useEffect(() => {
     axios
+      .get(import.meta.env.VITE_API_URL + "/api/v1/user/details", {
+        withCredentials: true,
+      })
+      .then((res) => {})
+      .catch((err) => {
+        if (err.code !== "ECONNABORTED") {
+          window.location.href =
+            "/signin?next=" + encodeURIComponent("/wishlist");
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    axios
       .get(import.meta.env.VITE_API_URL + "/api/v1/library/wishlist", {
         withCredentials: true,
       })
