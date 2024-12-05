@@ -42,13 +42,13 @@ func UpdateUserDetailsService(oldEmail string, u *models.UserDetails) string {
 }
 
 func DeleteUserService(email string) (string, error) {
+	_, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS DELETION_CONFIRM (UUID NVARCHAR(50) PRIMARY KEY, EXPIRE_AT INT)")
+	if err != nil {
+		return "Error while generating deletion request", err
+	}
 	transaction, err := database.DatabaseConnection.DB.Begin()
 	if err != nil {
 		return "Error starting the deletion process", err
-	}
-	_, err = database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS DELETION_CONFIRM (UUID NVARCHAR(50) PRIMARY KEY, EXPIRE_AT INT)")
-	if err != nil {
-		return "Error while generating deletion request", err
 	}
 	deletionToken := uuid.NewString()
 	_, err = transaction.Exec("INSERT INTO DELETION_CONFIRM VALUES (?, ?)", deletionToken, time.Now().Add(5*time.Minute).Unix())
@@ -60,22 +60,43 @@ func DeleteUserService(email string) (string, error) {
 		transaction.Rollback()
 		return "Error while deleting the user", err
 	}
+	_, err = transaction.Exec("DELETE FROM BORROW_HISTORY WHERE USER_EMAIL = ?", email)
+	if err != nil {
+		transaction.Rollback()
+		return "Error while deleting the user's borrow history", err
+	}
+	_, err = transaction.Exec("DELETE FROM USER_WISHLIST WHERE USER_EMAIL = ?", email)
+	if err != nil {
+		transaction.Rollback()
+		return "Error while deleting the user's wishlist", err
+	}
+	_, err = transaction.Exec("DELETE FROM BOOK_REVIEWS WHERE USER_EMAIL = ?", email)
+	if err != nil {
+		transaction.Rollback()
+		return "Error while deleting the user's reviews", err
+	}
 	err = transaction.Commit()
 	if err != nil {
 		return "Error while completing the deletion process", err
 	}
-	// TODO: delete all the records related to this user in all tables.
 	return deletionToken, nil
 }
 
 func VerifyDeleteAccountService(token string) string {
-	// TODO: create a scheduler to delete all expired tokens every day
 	result := database.DatabaseConnection.DB.QueryRow("SELECT * FROM DELETION_CONFIRM WHERE UUID = ?", token)
 	var entry models.DeletionConfirmationEntry
 	if err := result.Scan(&entry.Identifier, &entry.ExpireAt); err != nil {
 		return "Error getting the user token details"
 	} else if int(time.Now().Unix())-entry.ExpireAt > 300 {
 		return "Invalid token"
+	}
+	_, err := database.DatabaseConnection.DB.Exec("DELETE FROM DELETION_CONFIRM WHERE UUID = ?", token)
+	if err != nil {
+		return "Error deleting the token"
+	}
+	_, err = database.DatabaseConnection.DB.Exec("DELETE FROM DELETION_CONFIRM WHERE EXPIRE_AT < ?", time.Now().Unix())
+	if err != nil {
+		return "Error deleting the expired tokens"
 	}
 	return "Token is valid"
 }

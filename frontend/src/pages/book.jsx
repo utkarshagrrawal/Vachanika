@@ -13,6 +13,7 @@ function debounce(fn, delay) {
 }
 
 export default function Book() {
+  const random = Math.floor(Math.random() * 10);
   const { isbn } = useParams();
   const [userDetails, setUserDetails] = useState({});
   const [book, setBook] = useState({});
@@ -235,7 +236,7 @@ export default function Book() {
                   {/* User Info */}
                   <div className="flex items-center gap-3">
                     <img
-                      src="https://avatar.iran.liara.run/public/boy"
+                      src={`https://api.dicebear.com/8.x/notionists/svg?seed=${random}`}
                       alt="Anonymous User"
                       className="h-10 w-10 rounded-full border border-gray-300"
                     />

@@ -4,6 +4,7 @@ import Header from "../layouts/header";
 import axios from "axios";
 
 export default function Home() {
+  const random = Math.floor(Math.random() * 10);
   const [userDetails, setUserDetails] = useState({});
 
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function Home() {
             </span>
             <div className="flex items-center mt-4">
               <img
-                src="https://avatar.iran.liara.run/public/boy"
+                src={`https://api.dicebear.com/8.x/notionists/svg?seed=${random}`}
                 alt="User"
                 className="h-12 w-12 rounded-full"
               />
@@ -123,7 +124,7 @@ export default function Home() {
             </span>
             <div className="flex items-center mt-4">
               <img
-                src="https://avatar.iran.liara.run/public/boy"
+                src={`https://api.dicebear.com/8.x/notionists/svg?seed=${random}`}
                 alt="User"
                 className="h-12 w-12 rounded-full"
               />
