@@ -65,7 +65,6 @@ func UpdateUserDetailsService(oldEmail string, u *models.UserDetails) string {
 	if err != nil {
 		return "Error committing the transaction"
 	}
-	// TODO: update the records for borrowed items or anywhere the email id is used to identify
 	return "Profile updated successfully"
 }
 
