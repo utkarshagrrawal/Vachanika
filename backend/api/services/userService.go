@@ -33,9 +33,37 @@ func UpdateUserDetailsService(oldEmail string, u *models.UserDetails) string {
 			return "User already exists with this mail address"
 		}
 	}
-	_, err := database.DatabaseConnection.DB.Exec("UPDATE USERS SET NAME = ?, EMAIL = ?, PHONE = ?, GENDER = ?, DOB = ? WHERE EMAIL = ?", u.Name, u.Email, u.Phone, u.Gender, u.DOB, oldEmail)
+	txn, err := database.DatabaseConnection.DB.Begin()
+	if err != nil {
+		return "Error starting the transaction"
+	}
+	_, err = txn.Exec("UPDATE USERS SET NAME = ?, EMAIL = ?, PHONE = ?, GENDER = ?, DOB = ? WHERE EMAIL = ?", u.Name, u.Email, u.Phone, u.Gender, u.DOB, oldEmail)
 	if err != nil {
 		return "Error updating user details"
+	}
+	_, err = txn.Exec("UPDATE BORROW_HISTORY SET USER_EMAIL = ? WHERE USER_EMAIL = ?", u.Email, oldEmail)
+	if err != nil {
+		txn.Rollback()
+		return "Error updating the borrow history"
+	}
+	_, err = txn.Exec("UPDATE USER_WISHLIST SET USER_EMAIL = ? WHERE USER_EMAIL = ?", u.Email, oldEmail)
+	if err != nil {
+		txn.Rollback()
+		return "Error updating the user's wishlist"
+	}
+	_, err = txn.Exec("UPDATE BOOK_REVIEWS SET USER_EMAIL = ? WHERE USER_EMAIL = ?", u.Email, oldEmail)
+	if err != nil {
+		txn.Rollback()
+		return "Error updating the user's reviews"
+	}
+	_, err = txn.Exec("UPDATE ACTIVITY_LOGS SET USER_EMAIL = ? WHERE USER_EMAIL = ?", u.Email, oldEmail)
+	if err != nil {
+		txn.Rollback()
+		return "Error updating the user's activity logs"
+	}
+	err = txn.Commit()
+	if err != nil {
+		return "Error committing the transaction"
 	}
 	// TODO: update the records for borrowed items or anywhere the email id is used to identify
 	return "Profile updated successfully"
