@@ -135,8 +135,9 @@ export default function BorrowHistory() {
           message: res.data,
           type: "success",
         });
-        setBorrowedBooks(borrowedBooks.filter((b) => b.isbn !== book.isbn));
-        setPastBorrows([...pastBorrows, book]);
+        setBorrowedBooks(
+          borrowedBooks.filter((b) => b.isbn !== returningBookDetails.isbn)
+        );
       })
       .catch((err) => {
         setResponse({
