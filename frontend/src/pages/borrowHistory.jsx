@@ -209,7 +209,11 @@ export default function BorrowHistory() {
       )
       .then((res) => {
         setBorrowedBooks(borrowedBooks.map((b) => b.isbn !== book.isbn));
-        setPastBorrows([...pastBorrows, { ...book, lost: true }]);
+        console.log(pastBorrows);
+        setPastBorrows([
+          ...pastBorrows,
+          { ...book, lost: true, returnDate: new Date().toISOString() },
+        ]);
         setResponse({
           message: res.data,
           type: "success",

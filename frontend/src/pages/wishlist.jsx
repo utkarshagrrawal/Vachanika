@@ -174,7 +174,10 @@ export default function Wishlist() {
                 className="h-40 w-28 rounded-lg object-cover border border-gray-300"
               />
               <div className="flex flex-col gap-3 w-full">
-                <h2 className="text-lg font-bold text-gray-800">
+                <h2
+                  className="text-lg font-bold text-gray-800 hover:underline cursor-pointer"
+                  onClick={() => (window.location.href = `/book/${book.isbn}`)}
+                >
                   {book.title}
                 </h2>
                 <p className="text-sm text-gray-500">
