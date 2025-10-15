@@ -163,7 +163,10 @@ export default function ManageBooks() {
     };
     if (currentSection === "search") {
       setSearchResponse("");
-      fetchBooks;
+      let timeout = setTimeout(() => {
+        fetchBooks();
+      }, 300);
+      return () => clearTimeout(timeout);
     }
   }, [currentSection, searchPage, searchText]);
 

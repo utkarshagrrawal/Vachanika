@@ -55,7 +55,17 @@ func AddBookService(b *models.AddBookRequest) string {
 	if bookDetails.NumFound == 0 {
 		return "No book found with the provided ISBN. Please verify the ISBN and try again."
 	}
-	if _, err = txn.Exec("INSERT INTO BOOKS VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", b.ISBN, bookDetails.Docs[0].Title, bookDetails.Docs[0].AuthorName[0], bookDetails.Docs[0].Publisher[0], b.Quantity, time.Now(), 0, 0, 0); err != nil {
+	var title, author, publisher string
+	if len(bookDetails.Docs) > 0 {
+		title = bookDetails.Docs[0].Title
+	}
+	if len(bookDetails.Docs[0].AuthorName) > 0 {
+		author = bookDetails.Docs[0].AuthorName[0]
+	}
+	if len(bookDetails.Docs[0].Publisher) > 0 {
+		publisher = bookDetails.Docs[0].Publisher[0]
+	}
+	if _, err = txn.Exec("INSERT INTO BOOKS VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", b.ISBN, title, author, publisher, b.Quantity, time.Now(), 0, 0, 0); err != nil {
 		return "An error occurred while adding the book to the database. Please try again later."
 	}
 	for _, genre := range b.Genres {
@@ -194,7 +204,7 @@ func CheckoutBookService(b *models.BorrowBookRequest, userEmail string) string {
 		txn.Rollback()
 		return "An error occurred while checking out the book. Please try again later."
 	}
-	if _, err = txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", userEmail, "Checked out the book with ISBN "+b.ISBN, time.Now()); err != nil {
+	if _, err = txn.Exec("INSERT INTO ACTIVITY_LOGS (USER_EMAIL, ACTIVITY, TIMESTAMP) VALUES (?, ?, ?)", userEmail, "Checked out the book with ISBN "+b.ISBN, time.Now()); err != nil {
 		txn.Rollback()
 		return "An error occurred while logging the activity. Please try again later."
 	}
@@ -246,7 +256,7 @@ func ReturnBookService(b *models.BookManagementRequest) string {
 		txn.Rollback()
 		return "An error occurred while returning the book. Please try again later."
 	}
-	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", b.Email, "Returned the book with ISBN "+b.ISBN, time.Now()); err != nil {
+	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS (USER_EMAIL, ACTIVITY, TIMESTAMP) VALUES (?, ?, ?)", b.Email, "Returned the book with ISBN "+b.ISBN, time.Now()); err != nil {
 		txn.Rollback()
 		return "An error occurred while logging the activity. Please try again later."
 	}
@@ -265,6 +275,9 @@ func ReturnBookService(b *models.BookManagementRequest) string {
 func GetBorrowedBooksHistoryService(email string, page int) ([]models.BorrowedBook, string) {
 	skip := (page - 1) * 20
 	var books []models.BorrowedBook
+	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BOOKS (ISBN NVARCHAR(15) PRIMARY KEY, TITLE NVARCHAR(200), AUTHOR NVARCHAR(250), PUBLISHER NVARCHAR(250), QUANTITY INT, CREATED_AT DATE, CHECKED_OUT INT, OVERDUE INT, LOST INT)"); err != nil {
+		return books, "An error occurred while accessing the books table."
+	}
 	if _, err := database.DatabaseConnection.DB.Exec("CREATE TABLE IF NOT EXISTS BORROW_HISTORY (USER_EMAIL NVARCHAR(250), BOOK_ISBN NVARCHAR(15), CHECKOUT_DATE DATE, RETURN_DATE DATE, RETURNED BOOLEAN, OVERDUE BOOLEAN, LOST BOOLEAN, PRIMARY KEY(USER_EMAIL, BOOK_ISBN, CHECKOUT_DATE, RETURN_DATE))"); err != nil {
 		return books, "An error occurred while accessing the borrow history table."
 	}
@@ -305,7 +318,7 @@ func ExtendBookReturnDateService(b *models.BookManagementRequest) string {
 		txn.Rollback()
 		return "An error occurred while extending the return date. Please try again later."
 	}
-	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", b.Email, "Extended the return date for the book with ISBN "+b.ISBN, time.Now()); err != nil {
+	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS (USER_EMAIL, ACTIVITY, TIMESTAMP) VALUES (?, ?, ?)", b.Email, "Extended the return date for the book with ISBN "+b.ISBN, time.Now()); err != nil {
 		txn.Rollback()
 		return "An error occurred while logging the activity. Please try again later."
 	}
@@ -343,7 +356,7 @@ func ReportBookLostService(b *models.BookManagementRequest) string {
 		txn.Rollback()
 		return "An error occurred while reporting the book as lost. Please try again later."
 	}
-	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS VALUES (?, ?, ?)", b.Email, "Reported the book with ISBN "+b.ISBN+" as lost", time.Now()); err != nil {
+	if _, err := txn.Exec("INSERT INTO ACTIVITY_LOGS (USER_EMAIL, ACTIVITY, TIMESTAMP) VALUES (?, ?, ?)", b.Email, "Reported the book with ISBN "+b.ISBN+" as lost", time.Now()); err != nil {
 		txn.Rollback()
 		return "An error occurred while logging the activity. Please try again later."
 	}

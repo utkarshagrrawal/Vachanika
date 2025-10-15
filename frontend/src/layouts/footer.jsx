@@ -84,7 +84,7 @@ export default function Footer() {
               <span>📞 Phone: +91 63505 55537</span>
             </li>
             <li>
-              <span>📧 Email: utkarsh09jan@gmail.com</span>
+              <span>📧 Email: utkarshagrawal03@outlook.com</span>
             </li>
           </ul>
         </div>

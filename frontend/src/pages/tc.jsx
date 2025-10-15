@@ -106,7 +106,7 @@ export default function TermsAndConditions() {
             </p>
             <ul className="list-none space-y-2 mt-2 text-gray-600">
               <li>📍 Address: Pune, Maharashtra</li>
-              <li>📧 Email: utkarsh09jan@gmail.com</li>
+              <li>📧 Email: utkarshagrawal03@outlook.com</li>
               <li>📞 Phone: +91 63505 55537</li>
             </ul>
           </section>
